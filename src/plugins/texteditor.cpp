@@ -18,11 +18,10 @@ ReturnValue<int> TextEditorPlugin::fileWrite(LCTreeWidgetItem *item, const QByte
 void TextEditorPlugin::init(LCEdit *editor)
 {
 	m_editor = editor;
-	QVBoxLayout *layRight = editor->ui->verticalLayout_2; //editor->ui->layRight;
 	m_texteditor = KTextEditor::Editor::instance();
 	m_document = m_texteditor->createDocument(this);
 	m_textview = m_document->createView(editor);
-	layRight->addWidget(m_textview);
+	editor->ui->layRight->addWidget(m_textview);
 	m_textview->hide();
 }
 

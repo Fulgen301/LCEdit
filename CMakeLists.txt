@@ -5,13 +5,14 @@ project(LCEdit)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 
 # Find the QtWidgets library
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(KF5TextEditor)
-include_directories("/home/tokgeo/Git/lc/src")
+include_directories("../lc/src")
 
 set(C4GROUP_SRC
   ../lc/src/C4Group.cpp
@@ -38,22 +39,25 @@ set(LCEDIT_SRC
   ${C4GROUP_SRC}
 )
 
+set(LCEDIT_UI src/lcedit.ui)
+
 set (PLUGIN_C4GROUP_SRC src/plugins/c4group.cpp ${C4GROUP_SRC})
 
 # Create code from a list of Qt designer ui files.
 set(CMAKE_AUTOUIC ON) # use this if you have CMake 3.x instead of the following
+qt5_wrap_ui(src/main.cpp src/include.h src/lcedit.ui)
 
 # Tell CMake to create the helloworld executable
-add_executable(lcedit ${LCEDIT_SRC})
+add_executable(lcedit ${LCEDIT_SRC} ${LCEDIT_UI})
 
 # Use the Widgets module from Qt 5.
 target_link_libraries(lcedit Qt5::Widgets ${C4GROUP_LIBRARIES})
 
-add_library(plugin_c4group SHARED ${PLUGIN_C4GROUP_SRC})
+add_library(plugin_c4group SHARED ${PLUGIN_C4GROUP_SRC} ${LCEDIT_UI})
 target_link_libraries(plugin_c4group Qt5::Widgets ${C4GROUP_LIBRARIES})
 
 if (KF5TextEditor_FOUND)
-  add_library(plugin_texteditor SHARED src/plugins/texteditor.cpp)
+  add_library(plugin_texteditor SHARED src/plugins/texteditor.cpp ${LCEDIT_UI})
   target_link_libraries(plugin_texteditor Qt5::Widgets KF5::TextEditor)
 endif()
 

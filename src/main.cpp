@@ -5,8 +5,6 @@
 
 int main(int argc, char *argv[])
 {
-	assert(GetFirstExistingPath(QFileInfo("/home/tokgeo/CR/Adventure.c4s")) == QString("/home/tokgeo/CR/Adventure.c4s"));
-	assert(GetFirstExistingPath(QFileInfo("/home/tokgeo/CR/Adventure.c4s/Scenario.txt")) == QString("/home/tokgeo/CR/Adventure.c4s"));
 	QApplication app(argc, argv);
 	
 	QTranslator qtTranslator;
@@ -17,7 +15,7 @@ int main(int argc, char *argv[])
 	myappTranslator.load("lcedit_" + QLocale::system().name());
 	app.installTranslator(&myappTranslator);
 	
-	LCEdit w("/home/tokgeo/CR");
+	LCEdit w(app.arguments().length() >= 2 ? app.arguments()[1] : QDir::currentPath());
 	w.show();
 
 	return app.exec();
