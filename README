@@ -1,0 +1,12 @@
+LCEdit
+----------------------
+
+You need Qt5 and CMake 3.0 or higher
+
+-- Build instructions --
+
+cd /your/project/build
+cmake ../
+make
+
+./lcedit
