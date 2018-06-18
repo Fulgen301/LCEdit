@@ -90,9 +90,10 @@ ReturnValue<QByteArray> C4GroupPlugin::fileRead(LCTreeWidgetItem* item, off_t of
 	}
 	
 	grp.Advance(offset);
-	char buffer[size];
-	grp.Read(buffer, size ? size : grp.EntrySize());
-	return ReturnValue<QByteArray>(EP_AbortAll, QByteArray(buffer));
+	size_t realSize = size ? size : grp.AccessedEntrySize();
+	char buffer[realSize];
+	grp.Read(buffer, realSize);
+	return ReturnValue<QByteArray>(EP_AbortAll, QByteArray(buffer, realSize));
 }
 
 ReturnValue<int> C4GroupPlugin::fileWrite(LCTreeWidgetItem *item, const QByteArray &buf)
