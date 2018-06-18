@@ -32,20 +32,20 @@ int TextEditorPlugin::priority()
 
 ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
-	try
+	if (current && QSet<QString>({"txt", "c", "log"}).contains(QFileInfo(current->text(0)).completeSuffix()))
 	{
-		if (!current) throw 10;
 		QByteArray text = m_editor->fileRead(current, 0, 0);
 		m_document->setText(QString(text));
+		m_editor->ui->lblName->hide();
+		m_editor->ui->txtDescription->hide();
+		m_textview->show();
 		return EP_AbortAll;
 	}
-	catch (int e)
+	else
 	{
-		if (e == 10)
-		{
-			m_editor->ui->lblName->show();
-			m_editor->ui->txtDescription->show();
-			return EP_Continue;
-		}
+		m_textview->hide();
+		m_editor->ui->lblName->show();
+		m_editor->ui->txtDescription->show();
+		return EP_Continue;
 	}
 }
