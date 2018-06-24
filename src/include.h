@@ -1,5 +1,6 @@
 #pragma once
 #define TO_CSTR(x) ((x).toStdString().c_str())
+#define SAFE_DELETE(x) if (x != nullptr) { delete x; x = nullptr; }
 #include "ui_lcedit.h"
 
 enum ExecPolicy {
