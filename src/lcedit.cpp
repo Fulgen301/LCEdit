@@ -20,18 +20,40 @@ QString LCTreeWidgetItem::filePath()
 	return text(1);
 }
 
+LCTreeWidgetItem *LCTreeWidgetItem::getChildByName(const QString &name)
+{
+	for (uint i = 0; i < childCount(); i++)
+	{
+		if (child(i)->text(0) == name)
+		{
+			return dynamic_cast<LCTreeWidgetItem *>(child(i));
+		}
+	}
+	return nullptr;
+}
 
 LCEdit::LCEdit(const QString &path, QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::LCEdit),
 	m_path(path)
-{
+{/*
+	if (path == "")
+	{
+		QSettings clonkSettings(C4CFG_ConfigPath, C4CFG_Format);
+		qDebug() << C4CFG_ConfigPath << clonkSettings.value("General/Language").toString() << clonkSettings.value("General/LogPath").toString();
+		m_path = clonkSettings.value("General/LogPath").toString(); //FIXME
+		if (m_path.path() == "")
+			m_path = QDir::currentPath();
+	}*/
 	ui->setupUi(this);
 	QTreeWidgetItem *header = new QTreeWidgetItem();
 	header->setText(0, "LCEdit");
 	ui->treeWidget->setHeaderItem(header);
 	ui->treeWidget->setColumnCount(1);
-	QObject::connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::treeItemChanged);
+	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::setCommandLine);
+	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::treeItemChanged);
+	connect(ui->txtCmdLine, &QLineEdit::returnPressed, this, &LCEdit::startProcess);
+	connect(ui->btnStart, &QPushButton::clicked, this, &LCEdit::startProcess);
 	loadPlugins();
 	createTree(m_path);
 }
@@ -48,10 +70,10 @@ void LCEdit::loadPlugins()
 	{
 		LOAD(obj);
 	}
-	
+
 	// from http://doc.qt.io/qt-5/qtwidgets-tools-plugandpaint-app-example.html
 	QDir pluginsDir = QDir(qApp->applicationDirPath());
-	
+
 #if defined(Q_OS_WIN)
 	if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
 		pluginsDir.cdUp();
@@ -63,19 +85,28 @@ void LCEdit::loadPlugins()
 	}
 #endif
 	//pluginsDir.cd("plugins");
-	
+
 	foreach (QString filename, pluginsDir.entryList(QDir::Files))
 	{
 		QPluginLoader loader(pluginsDir.absoluteFilePath(filename));
-		LOAD(loader.instance()); 
+		LOAD(loader.instance());
 	}
-	
+
 	std::sort(plugins.begin(), plugins.end(), [](LCPluginInterface *a, LCPluginInterface *b) {return a->priority() > b->priority(); });
+}
+
+void LCEdit::loadPlugin(LCPluginInterface *plugin)
+{
+	if (plugin == nullptr)
+		return;
+	//TODO
 }
 
 void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
 	CALL_PLUGINS(createTree(base, parent))
+	if (!QFileInfo(base.path()).isDir())
+		return;
 	QDirIterator i(base);
 	while (i.hasNext())
 	{
@@ -84,7 +115,7 @@ void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 			i.next();
 			continue;
 		}
-		
+
 		if (parent != nullptr)
 		{
 			auto *item = createEntry<LCTreeWidgetItem>(parent, i.fileName(), i.filePath());
@@ -95,36 +126,72 @@ void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 		}
 		i.next();
 	}
-	ui->treeWidget->sortItems(0, Qt::AscendingOrder);
+//	ui->treeWidget->sortItems(0, Qt::AscendingOrder);
+}
+
+void LCEdit::setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+{
+	QStringList cmdLine = ui->txtCmdLine->text().split(" ", QString::SkipEmptyParts);
+	if (cmdLine.length() < 1)
+		cmdLine << "legacyclonk";
+
+	for (auto i = 1; i < cmdLine.length(); i++)
+	{
+		if (!(cmdLine[i].startsWith("/") || cmdLine[i].startsWith("--")))
+		{
+			cmdLine.removeAt(i);
+		}
+	}
+	if (current)
+		cmdLine << current->text(0);
+	ui->txtCmdLine->setText(cmdLine.join(" "));
 }
 
 void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 {
-	CALL_PLUGINS(treeItemChanged(dynamic_cast<LCTreeWidgetItem *>(current), dynamic_cast<LCTreeWidgetItem *>(previous)))
-	ui->lblName->setText("");
-	ui->txtDescription->setText("");
-	
-	auto *root = dynamic_cast<LCTreeWidgetItem *>(current); // no qobject_cast, as QTreeWidgetItem doesn't inherit from QObject
+	auto *root = dynamic_cast<LCTreeWidgetItem *>(current);
+	if (root)
+	{
+		bool state = ui->lblName->isVisible();
+		ui->lblName->setText(root->text(0));
+		state ? ui->lblName->show() : ui->lblName->hide();
+	}
+	CALL_PLUGINS(treeItemChanged(root, dynamic_cast<LCTreeWidgetItem *>(previous)))
+
 	if (root == nullptr)
 		return;
-	
+
 	QFileInfo info(root->filePath());
-	if (root->childCount() == 0 && info.isDir())
+	if (root->childCount() == 0)
 	{
 		createTree(root->filePath(), root);
 	}
-	
-	ui->lblName->setText(current->text(0));
+
 	if (QSet<QString>({"txt", "c", "log"}).contains(info.completeSuffix()) /*&& info.size() < 8092*/)
 	{
 		QFile file(info.filePath());
 		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 			return;
-		
-		qDebug() << "Reading file";
+
 		ui->txtDescription->setPlainText(file.readAll());
 		file.close();
 	}
+}
+
+void LCEdit::startProcess()
+{
+	QStringList cmdLine = ui->txtCmdLine->text().split(" ", QString::SkipEmptyParts);
+	if (cmdLine.length() < 2)
+		return;
+
+	if (proc != nullptr)
+	{
+		proc->terminate();
+		SAFE_DELETE(proc);
+	}
+	proc = new QProcess;
+	proc->start(m_path.absoluteFilePath(cmdLine.takeFirst()), cmdLine);
+	proc->waitForStarted();
 }
 
 QString GetFirstExistingPath(QFileInfo path)

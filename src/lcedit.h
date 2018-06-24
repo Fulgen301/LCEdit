@@ -1,17 +1,33 @@
 #pragma once
 
+#include "include.h"
 #include <QDir>
 #include <QDebug>
 #include <QMainWindow>
 #include <QTreeWidgetItem>
-#include <QMutex>
-#include "include.h"
 #include <QByteArray>
-#include <QPair>
+#include <QProcess>
 #include <QFile>
+#include <QSettings>
 #include <cstddef>
 #include <sys/types.h>
 
+#if 0 // FIXME: Open the right directory
+#ifdef Q_OS_WIN
+#define C4CFG_ConfigPath R"(HKEY_CURRENT_USERS\Software\RedWolf Design\LegacyClonk)";
+#define C4CFG_Format QSettings::NativeFormat
+#else
+#define C4CFG_Format QSettings::IniFormat
+#if defined(Q_OS_MACOS)
+#define C4CFG_ConfigPath QDir(qEnvironmentVariable("HOME")).absoluteFilePath("Library/Preferences/legacyclonk.config")
+#else
+#define C4CFG_ConfigPath QDir(qEnvironmentVariable("HOME")).absoluteFilePath(".legacyclonk/config")
+#ifndef Q_OS_UNIX
+#warning Using $HOME/.legacyclonk/config as Clonk config file. This might not be the right choice for your operating system.
+#endif // Q_OS_UNIX
+#endif // Q_OS_MACOS
+#endif // Q_OS_WIN
+#endif
 class LCEdit;
 class LCTreeWidgetItem;
 
@@ -24,7 +40,7 @@ public:
 	virtual int priority() = 0;
 	virtual ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) = 0;
 	virtual ReturnValue<QByteArray> fileRead(LCTreeWidgetItem *item, off_t offset = 0, size_t size = 0) = 0;
-	virtual ReturnValue<int> fileWrite(LCTreeWidgetItem *item, const QByteArray &data) = 0;
+	virtual ReturnValue<int> fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset = 0) = 0;
 };
 
 #define LCPlugin_Iid "org.legacyclonk.LegacyClonk.LCEdit.LCPluginInterface"
@@ -76,6 +92,7 @@ public:
 	CONSTRUCTOR(QTreeWidget)
 	~LCTreeWidgetItem() = default;
 	QString filePath();
+	LCTreeWidgetItem *getChildByName(const QString &name);
 };
 
 #undef CONSTRUCTOR
@@ -85,50 +102,55 @@ class LCEdit : public QMainWindow
 	Q_OBJECT
 
 public:
-	explicit LCEdit(const QString &path, QWidget *parent = nullptr);
+	explicit LCEdit(const QString &path = "", QWidget *parent = nullptr);
 	~LCEdit();
 
 private:
 	QDir m_path;
 	QList<LCPluginInterface *> plugins;
-	
+	QProcess *proc = nullptr;
+
 	void createTree(const QDir &base, LCTreeWidgetItem *parent = nullptr);
 	void loadPlugins();
+	void loadPlugin(LCPluginInterface *plugin);
 
 public:
 	Ui::LCEdit *ui;
-	QMutex mutex;
 	QString filePath() { return m_path.path(); }
 	template<class T> LCTreeWidgetItem *createEntry(T *parent, QString fileName, QString filePath)
 	{
 		auto *root = new LCTreeWidgetItem(parent);
 		root->setText(0, fileName);
 		root->setText(1, filePath);
+		ui->treeWidget->sortItems(0, Qt::AscendingOrder);
 		return root;
 	}
-	
+
 	CALL_PLUGINS_WITH_RET(QByteArray, fileRead(LCTreeWidgetItem *item, off_t offset, size_t size), fileRead(item, offset, size))
 		QFile file(item->filePath());
-		qDebug() << "Opening file";
 		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 			return nullptr;
-		qDebug() << "File opened";
 		file.seek(offset);
 		QByteArray buf = QByteArray(file.read(size ? size : file.size()));
 		file.close();
 		return buf;
 	}
-	
-	CALL_PLUGINS_WITH_RET(int, fileWrite(LCTreeWidgetItem *item, const QByteArray &buf), fileWrite(item, buf))
+
+	CALL_PLUGINS_WITH_RET(int, fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset), fileWrite(item, buf, offset))
 		QFile file(item->filePath());
-		if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
 			return -1;
-		
+
+		file.seek(offset);
 		qint64 c = file.write(buf);
 		file.close();
 		return c;
 	}
-	
+
+private slots:
+	void setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+	void startProcess();
+
 public slots:
 	void treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 };
