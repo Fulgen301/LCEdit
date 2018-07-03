@@ -1,10 +1,10 @@
 #undef new
 #undef delete
 #undef LineFeed
-
 #include <QDir>
-#include "C4Group.h"
 #include "../lcedit.h"
+#include "../lib/c4group.h"
+
 
 class C4GroupPlugin : public QObject, public LCPluginInterface
 {

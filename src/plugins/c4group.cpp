@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QString>
 #include <QSet>
+#include <new>
 #include "c4group.h"
 
 void C4GroupPlugin::init(LCEdit *editor)
@@ -21,21 +22,24 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 		QString suffix = QFileInfo(parent->filePath()).completeSuffix();
 		if (QSet<QString>({"c4d", "c4f", "c4s", "c4p"}).contains(suffix))
 		{
-			C4Group grp;
+			C4Group grp(parent->filePath());
 			try
 			{
-				openChildGroup(&grp, parent->filePath());
+				grp.open<QTemporaryFile>();
+				qDebug() << qobject_cast<QTemporaryFile *>(grp.content)->fileName();
 			}
-			catch (QString e)
+			catch (C4GroupException e)
 			{
-				return parent->childCount() ? EP_AbortMain : EP_Continue;
+				qCritical() << "C4Group:" << e.getMessage();
+				return EP_Continue;
 			}
 
-			char filename[_MAX_PATH + 1];
-			grp.FindEntry("*", filename);
-			while (grp.FindNextEntry("*", filename))
+			qDebug() << "here";
+
+			assert(grp.root->children.length());
+			foreach (C4GroupEntry *e, grp.root->children)
 			{
-				m_editor->createEntry<LCTreeWidgetItem>(parent, QString(filename), QDir(parent->filePath()).filePath(filename));
+				m_editor->createEntry<LCTreeWidgetItem>(parent, e->filename, QDir(parent->filePath()).filePath(e->filename));
 			}
 
 			return EP_AbortMain;
@@ -51,6 +55,7 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 
 void C4GroupPlugin::openChildGroup(C4Group* grp, const QString& path)
 {
+#if 0
 	if (!grp->IsOpen())
 	{
 		grp->Open(TO_CSTR(GetFirstExistingPath(QFileInfo(path))));
@@ -66,6 +71,7 @@ void C4GroupPlugin::openChildGroup(C4Group* grp, const QString& path)
 			throw QString("C4Group error.");
 		}
 	}
+#endif
 }
 
 int C4GroupPlugin::priority()
@@ -75,33 +81,26 @@ int C4GroupPlugin::priority()
 
 ReturnValue<QByteArray> C4GroupPlugin::fileRead(LCTreeWidgetItem* item, off_t offset, size_t size)
 {
-	C4Group grp;
 	QFileInfo info(item->filePath());
+	C4Group grp(info.filePath());
 	try
 	{
-		openChildGroup(&grp, info.path());
-		if (!(grp.IsPacked() && grp.AccessEntry(TO_CSTR(info.fileName()))))
-			throw QString("C4Group error.");
+		grp.open<QBuffer>();
 	}
-	catch (QString e)
+	catch (C4GroupException e)
 	{
-		if (e == "C4Group error.")
-		{
-			return ReturnValue<QByteArray>();
-		}
+		return ReturnValue<QByteArray>();
 	}
-
-	grp.Advance(offset);
-	size_t realSize = size ? qMin<size_t>(size, grp.AccessedEntrySize()) : grp.AccessedEntrySize();
-	if (offset + realSize > grp.AccessedEntrySize())
-		realSize = static_cast<size_t>(qMax<int>(grp.AccessedEntrySize() - offset, 0)); // size_t is unsigned, so qMax<size_t> fails if one argument is negative
-
-	if (realSize == 0)
-		return ReturnValue<QByteArray>(EP_AbortAll, QByteArray());
-
-	char buffer[realSize];
-	grp.Read(buffer, realSize);
-	return ReturnValue<QByteArray>(EP_AbortAll, QByteArray(buffer, realSize));
+	auto *f = dynamic_cast<C4GroupFile *>(grp.getChildByGroupPath(info.fileName()));
+	if (f == nullptr)
+	{
+		return ReturnValue<QByteArray>();
+	}
+	qint64 pos = f->pos();
+	f->seek(offset);
+	QByteArray buf = f->read(size);
+	f->seek(pos);
+	return ReturnValue<QByteArray>(EP_AbortAll, buf);
 }
 
 ReturnValue<int> C4GroupPlugin::fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset)
