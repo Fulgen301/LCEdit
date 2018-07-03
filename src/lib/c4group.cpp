@@ -172,9 +172,12 @@ QDataStream &operator >>(QDataStream &stream, C4GroupDirectory &entry)
 		stream >> NullBytes(12) >> e->fileSize >> NullBytes(4) >> e->relativeContentPosition;
 		stream >> e->lastModification >> e->checksumType >> e->checksum >> e->executable;
 		stream >> NullBytes(26);
-		if (isDir && entry.recursive)
+		if (isDir)
 		{
-			stream >> *dynamic_cast<C4GroupDirectory *>(e);
+			if (entry.recursive)
+			{
+				stream >> *dynamic_cast<C4GroupDirectory *>(e);
+			}
 		}
 		else
 		{
