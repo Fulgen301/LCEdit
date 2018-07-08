@@ -8,6 +8,7 @@
 #include <QByteArray>
 #include <QProcess>
 #include <QFile>
+#include <QIODevice>
 #include <QSettings>
 #include <cstddef>
 #include <sys/types.h>
@@ -39,8 +40,8 @@ public:
 	virtual ExecPolicy createTree(const QDir &base, LCTreeWidgetItem *parent) = 0;
 	virtual int priority() = 0;
 	virtual ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) = 0;
-	virtual ReturnValue<QByteArray> fileRead(LCTreeWidgetItem *item, off_t offset = 0, size_t size = 0) = 0;
-	virtual ReturnValue<int> fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset = 0) = 0;
+	virtual ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) = 0;
+	virtual ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) = 0;
 };
 
 #define LCPlugin_Iid "org.legacyclonk.LegacyClonk.LCEdit.LCPluginInterface"
@@ -106,8 +107,6 @@ public:
 	~LCEdit();
 
 private:
-	QDir m_path;
-	QList<LCPluginInterface *> plugins;
 	QProcess *proc = nullptr;
 
 	void createTree(const QDir &base, LCTreeWidgetItem *parent = nullptr);
@@ -116,6 +115,8 @@ private:
 
 public:
 	Ui::LCEdit *ui;
+	QDir m_path;
+	QList<LCPluginInterface *> plugins;
 	QString filePath() { return m_path.path(); }
 	template<class T> LCTreeWidgetItem *createEntry(T *parent, QString fileName, QString filePath)
 	{
@@ -126,25 +127,19 @@ public:
 		return root;
 	}
 
-	CALL_PLUGINS_WITH_RET(QByteArray, fileRead(LCTreeWidgetItem *item, off_t offset, size_t size), fileRead(item, offset, size))
-		QFile file(item->filePath());
-		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-			return nullptr;
-		file.seek(offset);
-		QByteArray buf = QByteArray(file.read(size ? size : file.size()));
-		file.close();
-		return buf;
+	CALL_PLUGINS_WITH_RET(QIODevice *, getDevice(LCTreeWidgetItem *item), getDevice(item))
+		return new QFile(item->filePath());
 	}
 
-	CALL_PLUGINS_WITH_RET(int, fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset), fileWrite(item, buf, offset))
-		QFile file(item->filePath());
-		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-			return -1;
-
-		file.seek(offset);
-		qint64 c = file.write(buf);
-		file.close();
-		return c;
+	CALL_PLUGINS_WITH_RET(bool, destroyDevice(LCTreeWidgetItem *item, QIODevice *device), destroyDevice(item, device))
+		if (dynamic_cast<QFile *>(device) != nullptr)
+		{
+			device->close();
+			SAFE_DELETE(device)
+			return true;
+		}
+		qWarning() << "Device" << device << "didn't get destroyed!";
+		return false;
 	}
 
 private slots:

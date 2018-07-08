@@ -2,6 +2,7 @@
 #undef delete
 #undef LineFeed
 #include <QDir>
+#include <QMap>
 #include "../lcedit.h"
 #include "../lib/c4group.h"
 
@@ -17,10 +18,11 @@ public:
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem * parent) override;
 	int priority() override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem * current, LCTreeWidgetItem * previous) override;
-	ReturnValue<QByteArray> fileRead(LCTreeWidgetItem *item, off_t offset = 0, size_t size = 0) override;
-	ReturnValue<int> fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset = 0) override;
+	ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
+	ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
 
 private:
-	void openChildGroup(C4Group *grp, const QString &path);
+	void createRealTree(LCTreeWidgetItem *parent, C4GroupDirectory *dir);
 	LCEdit *m_editor;
+	QMap<LCTreeWidgetItem *, C4GroupEntry *> map;
 };

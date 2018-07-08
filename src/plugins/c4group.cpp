@@ -17,61 +17,52 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
 	if (parent == nullptr)
 		return EP_Continue;
-	if (parent->childCount() == 0)
+
+	auto *grp = new C4Group(parent->filePath());
+	try
 	{
-		QString suffix = QFileInfo(parent->filePath()).completeSuffix();
-		if (QSet<QString>({"c4d", "c4f", "c4s", "c4p"}).contains(suffix))
+		grp->open();
+	}
+	catch (C4GroupException e)
+	{
+		return EP_Continue;
+	}
+
+	createRealTree(parent, grp->root);
+
+	return EP_AbortMain;
+}
+
+void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, C4GroupDirectory *dir)
+{
+	foreach (C4GroupEntry *e, dir->children)
+	{
+		LCTreeWidgetItem *entry = m_editor->createEntry<LCTreeWidgetItem>(parent, e->fileName, QDir(parent->filePath()).absoluteFilePath(e->fileName));
+		map[entry] = e;
+		auto *d = dynamic_cast<C4GroupDirectory *>(e);
+		if (d != nullptr)
 		{
-			C4Group grp(parent->filePath());
-			try
-			{
-				grp.open<QTemporaryFile>();
-				qDebug() << qobject_cast<QTemporaryFile *>(grp.content)->fileName();
-			}
-			catch (C4GroupException e)
-			{
-				qCritical() << "C4Group:" << e.getMessage();
-				return EP_Continue;
-			}
-
-			qDebug() << "here";
-
-			assert(grp.root->children.length());
-			foreach (C4GroupEntry *e, grp.root->children)
-			{
-				m_editor->createEntry<LCTreeWidgetItem>(parent, e->filename, QDir(parent->filePath()).filePath(e->filename));
-			}
-
-			return EP_AbortMain;
+			createRealTree(entry, d);
 		}
 	}
-	return EP_Continue;
 }
 
 ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
+	if (current == nullptr || previous == nullptr || !map.contains(previous))
+		return EP_Continue;
+
+	if (map.contains(current) && &(*(map[current]->group)) == &(*(map[previous]->group)))
+		return EP_Continue;
+
+	C4Group *grp = map[previous]->group;
+	if (grp->isPacked())
+		grp->pack();
+
+	grp->close();
+	delete grp;
+	map.remove(previous);
 	return EP_Continue;
-}
-
-void C4GroupPlugin::openChildGroup(C4Group* grp, const QString& path)
-{
-#if 0
-	if (!grp->IsOpen())
-	{
-		grp->Open(TO_CSTR(GetFirstExistingPath(QFileInfo(path))));
-	}
-
-	QString notOpenedPath = path.right(path.length() - grp->GetFullName().getLength());
-	notOpenedPath = notOpenedPath.remove(0, 1);
-
-	foreach(const QString &part, notOpenedPath.split(QDir::separator(), QString::SkipEmptyParts))
-	{
-		if (!grp->OpenChild(TO_CSTR(part)))
-		{
-			throw QString("C4Group error.");
-		}
-	}
-#endif
 }
 
 int C4GroupPlugin::priority()
@@ -79,31 +70,28 @@ int C4GroupPlugin::priority()
 	return 1;
 }
 
-ReturnValue<QByteArray> C4GroupPlugin::fileRead(LCTreeWidgetItem* item, off_t offset, size_t size)
+ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 {
-	QFileInfo info(item->filePath());
-	C4Group grp(info.filePath());
-	try
+	if (!map.contains(item))
 	{
-		grp.open<QBuffer>();
+		return ReturnValue<QIODevice *>();
 	}
-	catch (C4GroupException e)
+
+	auto *file = dynamic_cast<C4GroupFile *>(map[item]);
+	if (file == nullptr)
 	{
-		return ReturnValue<QByteArray>();
+		return ReturnValue<QIODevice *>();
 	}
-	auto *f = dynamic_cast<C4GroupFile *>(grp.getChildByGroupPath(info.fileName()));
-	if (f == nullptr)
-	{
-		return ReturnValue<QByteArray>();
-	}
-	qint64 pos = f->pos();
-	f->seek(offset);
-	QByteArray buf = f->read(size);
-	f->seek(pos);
-	return ReturnValue<QByteArray>(EP_AbortAll, buf);
+
+	return ReturnValue<QIODevice *>(EP_AbortAll, file);
 }
 
-ReturnValue<int> C4GroupPlugin::fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset)
+ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
-	return ReturnValue<int>(EP_Continue, 0);
+	if (map.values().contains(dynamic_cast<C4GroupFile *>(device)))
+	{
+		SAFE_DELETE(device)
+		return ReturnValue<bool>(EP_AbortAll, true);
+	}
+	return ReturnValue<bool>(EP_Continue, false);
 }

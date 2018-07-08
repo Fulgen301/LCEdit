@@ -24,8 +24,8 @@ public:
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem * parent) override;
 	int priority() override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem * current, LCTreeWidgetItem * previous) override;
-	ReturnValue<QByteArray> fileRead(LCTreeWidgetItem *item, off_t offset, size_t size) override;
-	ReturnValue<int> fileWrite(LCTreeWidgetItem *item, const QByteArray &buf, off_t offset = 0) override;
+	ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
+	ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
 
 private:
 	KTextEditor::Editor *m_texteditor = nullptr;
