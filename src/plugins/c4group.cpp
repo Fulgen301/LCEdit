@@ -57,7 +57,9 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 
 	C4Group *grp = map[previous]->group;
 	if (grp->isPacked())
+	{
 		grp->pack();
+	}
 
 	grp->close();
 	delete grp;
@@ -78,19 +80,21 @@ ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 	}
 
 	auto *file = dynamic_cast<C4GroupFile *>(map[item]);
-	if (file == nullptr)
+	if (file == nullptr || file->device == nullptr)
 	{
 		return ReturnValue<QIODevice *>();
 	}
 
-	return ReturnValue<QIODevice *>(EP_AbortAll, file);
+	return ReturnValue<QIODevice *>(EP_AbortAll, file->device);
 }
 
 ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
-	if (map.values().contains(dynamic_cast<C4GroupFile *>(device)))
+	Q_UNUSED(device);
+	// we don't destroy the device here, this is C4Group's concern, NOT OURS
+	if (map.contains(item))
 	{
-		SAFE_DELETE(device)
+		map.remove(item);
 		return ReturnValue<bool>(EP_AbortAll, true);
 	}
 	return ReturnValue<bool>(EP_Continue, false);
