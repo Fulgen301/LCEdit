@@ -76,24 +76,22 @@ QDataStream &operator <<(QDataStream &stream, C4GroupFile &entry)
 		stream << NullBytes(entry.contentPosition() - device->size());
 	}
 	device->seek(entry.contentPosition());
-	entry.open(QIODevice::ReadOnly);
-	Q_ASSERT(entry.size());
-	Q_ASSERT(!entry.atEnd());
-	TRANSFER_CONTENTS(entry, *device)
-//		Q_ASSERT(device->pos() - entry.size() == entry.contentPosition());
+	entry->open(QIODevice::ReadOnly);
+	TRANSFER_CONTENTS(*(entry.device), *device)
+	Q_ASSERT(device->pos() - entry->size() == entry.contentPosition());
 	device->seek(devicePos);
 	if (entry.group->isPacked() && qobject_cast<QBuffer *>(entry.device) == nullptr)
 	{
-		entry.seek(0);
+		entry->seek(0);
 		auto *buffer = new QBuffer;
 		buffer->open(QIODevice::WriteOnly);
-		TRANSFER_CONTENTS(entry, *buffer)
-		entry.close();
+		TRANSFER_CONTENTS(*(entry.device), *buffer)
+		entry->close();
 		delete entry.device;
 		entry.device = buffer;
 		return stream;
 	}
-	entry.close();
+	entry->close();
 	return stream;
 }
 
@@ -141,20 +139,18 @@ QDataStream &operator <<(QDataStream &stream, const C4GroupDirectory &entry)
 
 QDataStream &operator >>(QDataStream &stream, C4GroupFile &entry)
 {
-	entry.open(QIODevice::ReadWrite);
+	entry->open(QIODevice::ReadWrite);
 	QIODevice *device = stream.device();
 	qint64 devicePos = device->pos();
 	device->seek(entry.contentPosition());
-	qint64 filePos = entry.pos();
-	entry.seek(0);
-	while (entry.pos() < entry.fileSize)
+	while (entry->pos() < entry.fileSize)
 	{
-		qint64 size = qMin<qint64>(BLOCKSIZE, entry.fileSize - entry.pos());
-		entry.write(device->read(size));
+		qint64 size = qMin<qint64>(BLOCKSIZE, entry.fileSize - entry->pos());
+		entry->write(device->read(size));
+		bool end = device->atEnd();
 	}
 	device->seek(devicePos);
-	entry.seek(filePos);
-	entry.close();
+	entry->close();
 	return stream;
 }
 
@@ -226,7 +222,7 @@ int32_t C4GroupEntry::contentPosition()
 	return parentGroup ? parentGroup->contentPosition() + 204 + (316 * dynamic_cast<C4GroupDirectory *>(parentGroup)->fileSize) + relativeContentPosition : 0;
 }
 
-C4GroupFile::C4GroupFile() : QIODeviceProxy(new QBuffer)
+C4GroupFile::C4GroupFile() : device(new QBuffer)
 {
 }
 
@@ -236,17 +232,17 @@ C4GroupFile::~C4GroupFile()
 
 void C4GroupFile::updateCRC32()
 {
-	Q_ASSERT(open(QIODevice::ReadOnly));
+	device->open(QIODevice::ReadOnly);
 	checksum = crc32(0L, Z_NULL, 0);
 	do
 	{
 		char buf[BLOCKSIZE];
-		qint64 len = read(buf, BLOCKSIZE);
+		qint64 len = device->read(buf, BLOCKSIZE);
 		checksum = crc32(checksum, (Bytef *) buf, len);
 	}
-	while (!atEnd());
+	while (!device->atEnd());
 	checksumType = 0x01;
-	close();
+	device->close();
 }
 
 C4GroupDirectory::~C4GroupDirectory()
@@ -316,7 +312,7 @@ void C4Group::open(bool recursive)
 			if (e == nullptr)
 			{
 				grp.close();
-				throw new C4GroupException("Couldn't find requested subgroup");
+				throw C4GroupException("Couldn't find requested subgroup");
 			}
 			// if we don't do this, it and its children will get deleted upon group closing
 			e->parentGroup->children.removeAt(e->parentGroup->children.indexOf(dynamic_cast<C4GroupEntry *>(e)));
@@ -340,8 +336,6 @@ void C4Group::open(bool recursive)
 		tmp.seek(0);
 		tmp.write(QByteArray("\x1f\x8b"));
 		tmp.close();
-		QFile::remove("/home/tokgeo/CR/testextract");
-		tmp.copy("/home/tokgeo/CR/testextract");
 		content = new QBuffer;
 		content->open(QIODevice::ReadWrite);
 		{
@@ -403,8 +397,9 @@ void C4Group::explode(C4GroupDirectory *dir, QDir target, int *count)
 	{
 		QFileInfo info(path);
 		newPath = info.dir().absoluteFilePath(info.baseName() + "000");
-		QFile::rename(path, newPath);
+		QDir(newPath).removeRecursively();
 		target = path;
+		QFile::rename(path, newPath);
 	}
 	(*count)++;
 	target.mkpath(target.absolutePath());
@@ -416,13 +411,14 @@ void C4Group::explode(C4GroupDirectory *dir, QDir target, int *count)
 		}
 		else
 		{
-			auto *f = dynamic_cast<C4GroupFile *>(e);
+			auto f = *dynamic_cast<C4GroupFile *>(e);
 			f->open(QIODevice::ReadOnly);
-			auto *file = new QFile(target.absoluteFilePath(f->fileName));
-			file->open(QIODevice::WriteOnly);
-			f->seek(0);
-			TRANSFER_CONTENTS(*f, *file);
-			f->device = file;
+			auto *file = new QFile(target.absoluteFilePath(f.fileName));
+			file->open(QIODevice::WriteOnly | QIODevice::Truncate);
+			TRANSFER_CONTENTS(*(f.device), *file);
+			f->close();
+			SAFE_DELETE(f.device);
+			f.device = file;
 			f->close();
 		}
 	}

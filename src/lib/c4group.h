@@ -16,73 +16,6 @@ extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
 #define BLOCKSIZE 1024
 #define TRANSFER_CONTENTS(x, y) while (!(x).atEnd()) { (y).write((x).read(BLOCKSIZE)); }
 
-#define _METHOD(x, y) inline x { Q_ASSERT(device != nullptr); return device->y; }
-#define _SIGNAL(x, y, z) connect(device, &x, [this](y){ emit z; });
-class QIODeviceProxy : public QIODevice
-{
-	Q_OBJECT
-public:
-	QIODeviceProxy(QIODevice *device) : device(device)
-	{
-		_SIGNAL(QIODevice::readyRead,, readyRead())
-		_SIGNAL(QIODevice::channelReadyRead, int channel, channelReadyRead(channel))
-		_SIGNAL(QIODevice::bytesWritten, qint64 bytes, bytesWritten(bytes))
-		_SIGNAL(QIODevice::aboutToClose,, aboutToClose())
-		_SIGNAL(QIODevice::readChannelFinished,, readChannelFinished())
-	}
-
-	~QIODeviceProxy()
-	{
-		if (device != nullptr)
-		{
-			delete device;
-		}
-	}
-
-	_METHOD(bool isOpen() const, isOpen())
-	_METHOD(bool isSequential() const, isSequential())
-	inline bool open(OpenMode mode)
-	{
-		QIODevice::open(mode);
-		return device->open(mode);
-	}
-
-	inline void close()
-	{
-		QIODevice::close();
-		return device->close();
-	}
-
-	_METHOD(qint64 pos() const, pos())
-	_METHOD(qint64 size() const, size())
-	_METHOD(bool seek(qint64 pos), seek(pos))
-	_METHOD(bool atEnd() const, atEnd())
-	_METHOD(bool reset(), reset())
-
-	_METHOD(qint64 bytesAvailable() const, bytesAvailable())
-	_METHOD(qint64 bytesToWrite() const, bytesToWrite())
-
-	_METHOD(bool canReadLine() const, canReadLine())
-
-	_METHOD(bool waitForReadyRead(int msecs), waitForReadyRead(msecs))
-	_METHOD(bool waitForBytesWritten(int msecs), waitForBytesWritten(msecs))
-
-protected:
-	inline qint64 readData(char *data, qint64 maxlen)
-	{
-		qint64 ret = device->read(data, maxlen);
-		return ret;
-	}
-//	_METHOD(qint64 readData(char *data, qint64 maxlen), read(data, maxlen))
-	_METHOD(qint64 readLineData(char *data, qint64 maxlen), readLine(data, maxlen))
-	_METHOD(qint64 writeData(const char *data, qint64 len), write(data, len))
-
-public:
-	QIODevice *device = nullptr;
-};
-#undef _METHOD
-#undef _SIGNAL
-
 #if Q_BYTE_ORDER == Q_BIG_ENDIAN
 #warning C4Group uses little endian as byte order in order to maintain compatibility with \
 	groups created on x86 processors.
@@ -139,15 +72,18 @@ private:
 /* C4GroupFile is its own QIODevice, as writing directly to the group stream might damage the group file if
  * sensible data (e.g. the next file's contents) are overwritten. */
 
-class C4GroupFile : public QIODeviceProxy, public C4GroupEntry
+class C4GroupFile : public C4GroupEntry
 {
-	Q_OBJECT
 public:
 	C4GroupFile();
 	~C4GroupFile();
 	void updateCRC32();
+	QIODevice *device = nullptr;
 	qint64 size() const override { return device->size(); }
-private:
+	QIODevice *operator ->()
+	{
+		return device;
+	}
 	friend QDataStream &operator <<(QDataStream &, C4GroupFile &);
 	friend QDataStream &operator >>(QDataStream &, C4GroupFile &);
 };
