@@ -69,7 +69,7 @@ QDataStream &operator <<(QDataStream &stream, C4GroupFile &entry)
 	QIODevice *device = stream.device();
 	qint64 devicePos = device->pos();
 	qint64 contentPos = entry.contentPosition();
-	Q_ASSERT(contentPos > 316 * entry.parentGroup->children.length());
+	Q_ASSERT(contentPos > ENTRYCORE_SIZE * entry.parentGroup->children.length());
 	if (device->size() <= entry.contentPosition())
 	{
 		Q_ASSERT(device->seek(device->size()));
@@ -108,7 +108,7 @@ QDataStream &operator <<(QDataStream &stream, const C4GroupDirectory &entry)
 	header << NullBytes(32) << (quint32) entry.creationDate << entry.original << NullBytes(92);
 	entry.memScramble(buf);
 	stream.writeRawData(buf.data(), buf.length());
-	int32_t nextContentPosition = 316 * entry.children.length();
+	int32_t nextContentPosition = ENTRYCORE_SIZE * entry.children.length();
 	foreach(C4GroupEntry *e, entry.children)
 	{
 		e->relativeContentPosition = nextContentPosition;
@@ -158,9 +158,9 @@ QDataStream &operator >>(QDataStream &stream, C4GroupDirectory &entry)
 {
 	stream.device()->seek(entry.contentPosition());
 	stream.setVersion(QDataStream::Qt_1_0);
-	char buf[204];
-	stream.readRawData(buf, 204);
-	QByteArray ar(buf, 204);
+	char buf[HEADER_SIZE];
+	stream.readRawData(buf, HEADER_SIZE);
+	QByteArray ar(buf, HEADER_SIZE);
 	entry.memScramble(ar);
 	Q_ASSERT(ar.startsWith("RedWolf Design GrpFolder"));
 
@@ -178,7 +178,7 @@ QDataStream &operator >>(QDataStream &stream, C4GroupDirectory &entry)
 	qint64 pos = device->pos();
 	for (int32_t i = 0; i < entry.fileSize; i++)
 	{
-		qint64 pos = entry.contentPosition() + 204 + 316 * i;
+		qint64 pos = entry.contentPosition() + HEADER_SIZE + ENTRYCORE_SIZE * i;
 		int32_t isDir;
 		device->seek(pos + 264);
 		stream >> isDir;
@@ -219,7 +219,7 @@ QDataStream &operator >>(QDataStream &stream, C4GroupDirectory &entry)
 
 int32_t C4GroupEntry::contentPosition()
 {
-	return parentGroup ? parentGroup->contentPosition() + 204 + (316 * dynamic_cast<C4GroupDirectory *>(parentGroup)->fileSize) + relativeContentPosition : 0;
+	return parentGroup ? parentGroup->contentPosition() + HEADER_SIZE + (ENTRYCORE_SIZE * dynamic_cast<C4GroupDirectory *>(parentGroup)->fileSize) + relativeContentPosition : 0;
 }
 
 C4GroupFile::C4GroupFile() : device(new QBuffer)
@@ -252,7 +252,7 @@ C4GroupDirectory::~C4GroupDirectory()
 
 void C4GroupDirectory::memScramble(QByteArray &data) const
 {
-	Q_ASSERT(data.length() == 204);
+	Q_ASSERT(data.length() == HEADER_SIZE);
 	for (int32_t i = 0; (i + 2) < data.length(); i += 3)
 	{
 		char tmp = data[i];
@@ -268,7 +268,7 @@ void C4GroupDirectory::memScramble(QByteArray &data) const
 
 int32_t C4GroupDirectory::sizeInBytes() const
 {
-	int32_t size = 204 + 316 * children.length();
+	int32_t size = HEADER_SIZE + ENTRYCORE_SIZE * children.length();
 	foreach (C4GroupEntry *e, children)
 	{
 		size += e->sizeInBytes();
@@ -507,7 +507,7 @@ void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 	{
 		parentGroup = new C4GroupDirectory;
 		parentGroup->fileName = QFile::encodeName(dir);
-		parentGroup->relativeContentPosition = 204;
+		parentGroup->relativeContentPosition = HEADER_SIZE;
 	}
 
 //	qt_ntfs_permission_lookup++;

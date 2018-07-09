@@ -16,6 +16,9 @@ extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
 #define BLOCKSIZE 1024
 #define TRANSFER_CONTENTS(x, y) while (!(x).atEnd()) { (y).write((x).read(BLOCKSIZE)); }
 
+const int32_t HEADER_SIZE = 204;
+const int32_t ENTRYCORE_SIZE = 316;
+
 #if Q_BYTE_ORDER == Q_BIG_ENDIAN
 #warning C4Group uses little endian as byte order in order to maintain compatibility with \
 	groups created on x86 processors.
