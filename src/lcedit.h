@@ -1,15 +1,17 @@
 #pragma once
 
 #include "include.h"
-#include <QDir>
-#include <QDebug>
-#include <QMainWindow>
-#include <QTreeWidgetItem>
 #include <QByteArray>
-#include <QProcess>
+#include <QDebug>
+#include <QDir>
 #include <QFile>
+#include <QFileIconProvider>
+#include <QFileInfo>
 #include <QIODevice>
+#include <QMainWindow>
+#include <QProcess>
 #include <QSettings>
+#include <QTreeWidgetItem>
 #include <cstddef>
 #include <sys/types.h>
 
@@ -123,6 +125,7 @@ public:
 		auto *root = new LCTreeWidgetItem(parent);
 		root->setText(0, fileName);
 		root->setText(1, filePath);
+		root->setIcon(0, QFileIconProvider().icon(QFileInfo(filePath)));
 		ui->treeWidget->sortItems(0, Qt::AscendingOrder);
 		return root;
 	}
