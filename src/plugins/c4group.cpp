@@ -28,6 +28,12 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 		return EP_Continue;
 	}
 
+	if (!grp->isPacked())
+	{
+		delete grp;
+		return EP_Continue;
+	}
+
 	createRealTree(parent, grp->root);
 
 	return EP_AbortMain;
@@ -94,8 +100,12 @@ ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice
 	// we don't destroy the device here, this is C4Group's concern, NOT OURS
 	if (map.contains(item))
 	{
-		map.remove(item);
-		return ReturnValue<bool>(EP_AbortAll, true);
+		auto *f = dynamic_cast<C4GroupFile *>(map[item]);
+		if (f != nullptr && f->device == device)
+		{
+			map.remove(item);
+			return ReturnValue<bool>(EP_AbortAll, true);
+		}
 	}
 	return ReturnValue<bool>(EP_Continue, false);
 }
