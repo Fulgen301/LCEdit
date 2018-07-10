@@ -40,7 +40,6 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 		QIODevice *device = m_editor->getDevice(current);
 		if (device != nullptr)
 		{
-			auto *f = qobject_cast<QFile *>(device);
 			if (device->open(QIODevice::ReadOnly))
 			{
 				QFileInfo info(current->filePath());
@@ -89,6 +88,7 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 							m_editor->destroyDevice(current, device);
 						}
 					});
+					m_document->setReadWrite(true);
 					m_document->openUrl(QUrl::fromLocalFile(filename));
 					m_document->setHighlightingMode(m_document->highlightingModes().contains(info.baseName()) ? info.baseName() : info.completeSuffix() == "c" ? "C4Script" : "Normal");
 					m_editor->ui->lblName->hide();
