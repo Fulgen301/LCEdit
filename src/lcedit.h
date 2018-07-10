@@ -54,11 +54,11 @@ foreach(LCPluginInterface *obj, plugins) \
 { \
 	switch (obj->x) \
 	{ \
-		case EP_Continue: \
+		case ExecPolicy::Continue: \
 			continue; \
-		case EP_AbortMain: \
+		case ExecPolicy::AbortMain: \
 			ret = true; \
-		case EP_AbortAll: \
+		case ExecPolicy::AbortAll: \
 			return; \
 	} \
 } \
@@ -71,10 +71,10 @@ if (ret) return;
 		ReturnValue<t> ret = obj->x; \
 		switch (ret.code) \
 		{ \
-			case EP_Continue: \
+			case ExecPolicy::Continue: \
 				continue; \
-			case EP_AbortMain: \
-			case EP_AbortAll: \
+			case ExecPolicy::AbortMain: \
+			case ExecPolicy::AbortAll: \
 				return ret.value; \
 		} \
 	}

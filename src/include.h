@@ -5,14 +5,14 @@
 #define TRANSFER_CONTENTS(x, y) while (!(x).atEnd()) { (y).write((x).read(BLOCKSIZE)); }
 #include "ui_lcedit.h"
 
-enum ExecPolicy {
-	EP_Continue = 1,
-	EP_AbortMain,
-	EP_AbortAll
+enum class ExecPolicy {
+	Continue = 1,
+	AbortMain,
+	AbortAll
 };
 
 template<class T> struct ReturnValue {
 	ExecPolicy code;
 	T value;
-	ReturnValue(ExecPolicy c = EP_Continue, T v = nullptr) : code(c), value(v) {}
+	ReturnValue(ExecPolicy c = ExecPolicy::Continue, T v = nullptr) : code(c), value(v) {}
 };

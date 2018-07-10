@@ -16,7 +16,7 @@ void C4GroupPlugin::init(LCEdit *editor)
 ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
 	if (parent == nullptr)
-		return EP_Continue;
+		return ExecPolicy::Continue;
 
 	auto *grp = new C4Group(parent->filePath());
 	try
@@ -25,18 +25,18 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	}
 	catch (C4GroupException e)
 	{
-		return EP_Continue;
+		return ExecPolicy::Continue;
 	}
 
 	if (!grp->isPacked())
 	{
 		delete grp;
-		return EP_Continue;
+		return ExecPolicy::Continue;
 	}
 
 	createRealTree(parent, grp->root);
 
-	return EP_AbortMain;
+	return ExecPolicy::AbortMain;
 }
 
 void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, C4GroupDirectory *dir)
@@ -56,10 +56,10 @@ void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, C4GroupDirectory *d
 ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
 	if (current == nullptr || previous == nullptr || !map.contains(previous))
-		return EP_Continue;
+		return ExecPolicy::Continue;
 
 	if (map.contains(current) && &(*(map[current]->group)) == &(*(map[previous]->group)))
-		return EP_Continue;
+		return ExecPolicy::Continue;
 
 	C4Group *grp = map[previous]->group;
 	if (grp->isPacked())
@@ -70,7 +70,7 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 	grp->close();
 	delete grp;
 	map.remove(previous);
-	return EP_Continue;
+	return ExecPolicy::Continue;
 }
 
 int C4GroupPlugin::priority()
@@ -91,7 +91,7 @@ ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 		return ReturnValue<QIODevice *>();
 	}
 
-	return ReturnValue<QIODevice *>(EP_AbortAll, file->device);
+	return ReturnValue<QIODevice *>(ExecPolicy::AbortAll, file->device);
 }
 
 ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
@@ -104,8 +104,8 @@ ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice
 		if (f != nullptr && f->device == device)
 		{
 			map.remove(item);
-			return ReturnValue<bool>(EP_AbortAll, true);
+			return ReturnValue<bool>(ExecPolicy::AbortAll, true);
 		}
 	}
-	return ReturnValue<bool>(EP_Continue, false);
+	return ReturnValue<bool>(ExecPolicy::Continue, false);
 }

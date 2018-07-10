@@ -7,7 +7,7 @@
 
 ExecPolicy TextEditorPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
-	return EP_Continue;
+	return ExecPolicy::Continue;
 }
 
 void TextEditorPlugin::init(LCEdit *editor)
@@ -94,7 +94,7 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 					m_editor->ui->lblName->hide();
 					m_editor->ui->txtDescription->hide();
 					m_textview->show();
-					return EP_AbortAll;
+					return ExecPolicy::AbortAll;
 				}
 			}
 		}
@@ -105,7 +105,7 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 	m_textview->hide();
 	m_editor->ui->lblName->show();
 	m_editor->ui->txtDescription->show();
-	return EP_Continue;
+	return ExecPolicy::Continue;
 }
 
 ReturnValue<QIODevice *> TextEditorPlugin::getDevice(LCTreeWidgetItem *item)
@@ -118,5 +118,5 @@ ReturnValue<bool> TextEditorPlugin::destroyDevice(LCTreeWidgetItem *item, QIODev
 {
 	Q_UNUSED(item);
 	Q_UNUSED(device);
-	return ReturnValue<bool>(EP_Continue, false);
+	return ReturnValue<bool>(ExecPolicy::Continue, false);
 }
