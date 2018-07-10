@@ -146,8 +146,11 @@ QDataStream &operator >>(QDataStream &stream, C4GroupFile &entry)
 	while (entry->pos() < entry.fileSize)
 	{
 		qint64 size = qMin<qint64>(BLOCKSIZE, entry.fileSize - entry->pos());
+		if (device->atEnd() && size > 0)
+		{
+			throw C4GroupException(QStringLiteral("Corrupted group file"));
+		}
 		entry->write(device->read(size));
-		bool end = device->atEnd();
 	}
 	device->seek(devicePos);
 	entry->close();
@@ -334,7 +337,7 @@ void C4Group::open(bool recursive)
 			throw C4GroupException("File is not a c4group file");
 		}
 		tmp.seek(0);
-		tmp.write(QByteArray("\x1f\x8b"));
+		tmp.write(QByteArrayLiteral("\x1f\x8b"));
 		tmp.close();
 		content = new QBuffer;
 		content->open(QIODevice::ReadWrite);
@@ -342,7 +345,7 @@ void C4Group::open(bool recursive)
 			gzFile f = gzopen(QFile::encodeName(tempPath).data(), "r");
 			if (f == Z_NULL)
 			{
-				throw new C4GroupException(QString("Error at gzopen (%1)").arg(strerror(errno)));
+				throw new C4GroupException(QStringLiteral("Error at gzopen (%1)").arg(strerror(errno)));
 			}
 
 			char buf[BLOCKSIZE];
@@ -449,7 +452,7 @@ void C4Group::pack(int compression)
 	gzFile f = gzopen(QFile::encodeName(path).constData(), mode);
 	if (f == Z_NULL)
 	{
-		throw new C4GroupException(QString("Error at gzopen (%1)").arg(strerror(errno)));
+		throw new C4GroupException(QStringLiteral("Error at gzopen (%1)").arg(strerror(errno)));
 	}
 
 	content->seek(0);
@@ -535,7 +538,7 @@ void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 			d->fileSize = d->children.length();
 			d->creationDate = static_cast<uint32_t>(info.created().toSecsSinceEpoch());
 			d->lastModification = static_cast<uint32_t>(info.lastModified().toSecsSinceEpoch());
-			d->original = d->author == QByteArray("RedWolf Design") ? 1234567 : 0;
+			d->original = d->author == QByteArrayLiteral("RedWolf Design") ? 1234567 : 0;
 			parentGroup->children.append(dynamic_cast<C4GroupEntry *>(d));
 		}
 		else
@@ -556,6 +559,7 @@ void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 		count++;
 	}
 	root = parentGroup;
+	packed = false;
 //	qt_ntfs_permission_lookup--;
 }
 #undef SAFE_DELETE
