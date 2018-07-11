@@ -46,9 +46,6 @@ LCEdit::LCEdit(const QString &path, QWidget *parent) :
 			m_path = QDir::currentPath();
 	}*/
 	ui->setupUi(this);
-	QTreeWidgetItem *header = new QTreeWidgetItem();
-	header->setText(0, "LCEdit");
-	ui->treeWidget->setHeaderItem(header);
 	ui->treeWidget->setColumnCount(1);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::setCommandLine);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::treeItemChanged);
