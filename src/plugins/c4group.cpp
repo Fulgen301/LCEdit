@@ -15,7 +15,7 @@ void C4GroupPlugin::init(LCEdit *editor)
 
 ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
-	if (parent == nullptr)
+	if (parent == nullptr || map.contains(parent))
 		return ExecPolicy::Continue;
 
 	auto *grp = new C4Group(parent->filePath());
@@ -35,7 +35,6 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	}
 
 	createRealTree(parent, grp->root);
-
 	return ExecPolicy::AbortMain;
 }
 
@@ -86,7 +85,7 @@ ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 	}
 
 	auto *file = dynamic_cast<C4GroupFile *>(map[item]);
-	if (file == nullptr || file->device == nullptr)
+	if (Q_UNLIKELY(file == nullptr) || Q_UNLIKELY(file->device == nullptr))
 	{
 		return ReturnValue<QIODevice *>();
 	}
@@ -103,9 +102,9 @@ ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice
 		auto *f = dynamic_cast<C4GroupFile *>(map[item]);
 		if (f != nullptr && f->device == device)
 		{
-			map.remove(item);
 			return ReturnValue<bool>(ExecPolicy::AbortAll, true);
 		}
 	}
+
 	return ReturnValue<bool>(ExecPolicy::Continue, false);
 }
