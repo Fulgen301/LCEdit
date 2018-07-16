@@ -139,7 +139,7 @@ void FileSearchPlugin::searchTermEntered()
 	searchThread = QThread::create([this](){ search(ui->txtSearchTerm->text()); });
 	connect(searchThread, &QThread::finished, [this]() { ui->txtSearchTerm->setEnabled(true); });
 	connect(searchThread, &QThread::finished, [this]() { ui->cmbMode->setEnabled(true); });
-//	connect(searchThread, &QThread::finished, [this]() { searchThread->deleteLater(); });
+	connect(searchThread, &QThread::finished, [this]() { searchThread->deleteLater(); searchThread = nullptr; });
 	searchThread->start();
 }
 
