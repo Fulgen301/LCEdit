@@ -43,17 +43,18 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 			if (device->open(QIODevice::ReadOnly))
 			{
 				QFileInfo info(current->filePath());
-				if (QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), device->read(20)).inherits("text/plain"))
+				if (QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), device->peek(20)).inherits("text/plain"))
 				{
-					device->seek(0);
 					QString filename;
 					if (qobject_cast<QFile *>(device) == nullptr)
 					{
 						device->open(QIODevice::ReadOnly);
 						Q_ASSERT(device->isOpen());
 						file.open();
+						file.resize(0);
 						TRANSFER_CONTENTS(*device, file)
 						file.close();
+						device->close();
 						filename = file.fileName();
 					}
 					else
@@ -61,7 +62,6 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 						filename = qobject_cast<QFile *>(device)->fileName();
 					}
 					filename = QFileInfo(filename).absoluteFilePath();
-					device->close();
 					watcher = new QFileSystemWatcher();
 					watcher->addPath(filename);
 					QObject::connect(watcher, &QFileSystemWatcher::fileChanged, [this, current, filename](const QString &path)
@@ -94,11 +94,12 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 					m_editor->ui->lblName->hide();
 					m_editor->ui->txtDescription->hide();
 					m_textview->show();
+					m_editor->destroyDevice(current, device);
 					return ExecPolicy::AbortAll;
 				}
+				device->close();
 			}
 		}
-		device->close();
 		m_editor->destroyDevice(current, device);
 	}
 
