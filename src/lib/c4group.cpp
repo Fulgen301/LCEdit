@@ -165,7 +165,10 @@ QDataStream &operator >>(QDataStream &stream, C4GroupDirectory &entry)
 	stream.readRawData(buf, HEADER_SIZE);
 	QByteArray ar(buf, HEADER_SIZE);
 	entry.memScramble(ar);
-	Q_ASSERT(ar.startsWith("RedWolf Design GrpFolder"));
+	if (!ar.startsWith("RedWolf Design GrpFolder"))
+	{
+		throw C4GroupException(QStringLiteral("Corrupted group folder"));
+	}
 
 	QDataStream header(&ar, QIODevice::ReadOnly);
 	header.setVersion(QDataStream::Qt_1_0);
