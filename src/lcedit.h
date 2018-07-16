@@ -9,11 +9,12 @@
 #include <QFileInfo>
 #include <QIODevice>
 #include <QMainWindow>
+#include <QMutex>
 #include <QProcess>
 #include <QSettings>
 #include <QTreeWidgetItem>
 #include <cstddef>
-#include <sys/types.h>
+#include <cstdint>
 
 #if 0 // FIXME: Open the right directory
 #ifdef Q_OS_WIN
@@ -64,24 +65,17 @@ foreach(LCPluginInterface *obj, plugins) \
 } \
 if (ret) return;
 
-#define CALL_PLUGINS_WITH_RET(t, f, x) t f \
-{ \
-	foreach (LCPluginInterface *obj, plugins) \
+#define CALL_PLUGINS_WITH_RET(t, x) \
+	ReturnValue<t> ret(ExecPolicy::Continue, static_cast<t>(NULL)); \
+	foreach (LCPluginInterface *plugin, plugins) \
 	{ \
-		ReturnValue<t> ret = obj->x; \
-		switch (ret.code) \
+		ret = plugin->x; \
+		if (ret.code != ExecPolicy::Continue) \
 		{ \
-			case ExecPolicy::Continue: \
-				continue; \
-			case ExecPolicy::AbortMain: \
-			case ExecPolicy::AbortAll: \
-				return ret.value; \
+			break; \
 		} \
 	}
 
-#define CALL_PLUGINS_WITH_RET_NULLPTR(t, f, x) CALL_PLUGINS_WITH_RET(t, f, x) \
-	return nullptr; \
-}
 
 namespace Ui {
 class LCEdit;
@@ -96,6 +90,7 @@ public:
 	~LCTreeWidgetItem() = default;
 	QString filePath();
 	LCTreeWidgetItem *getChildByName(const QString &name);
+	QMutex mutex;
 };
 
 #undef CONSTRUCTOR
@@ -130,20 +125,9 @@ public:
 		return root;
 	}
 
-	CALL_PLUGINS_WITH_RET(QIODevice *, getDevice(LCTreeWidgetItem *item), getDevice(item))
-		return new QFile(item->filePath());
-	}
-
-	CALL_PLUGINS_WITH_RET(bool, destroyDevice(LCTreeWidgetItem *item, QIODevice *device), destroyDevice(item, device))
-		if (dynamic_cast<QFile *>(device) != nullptr)
-		{
-			device->close();
-			SAFE_DELETE(device)
-			return true;
-		}
-		qWarning() << "Device" << device << "didn't get destroyed!";
-		return false;
-	}
+	[[nodiscard]]
+	QIODevice *getDevice(LCTreeWidgetItem *item);
+	bool destroyDevice(LCTreeWidgetItem *item, QIODevice *device);
 
 private slots:
 	void setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous);

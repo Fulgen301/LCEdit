@@ -1,6 +1,7 @@
 #include <QDebug>
 #include <QDirIterator>
 #include <QSet>
+#include <QMimeDatabase>
 #include <QMutex>
 #include <QRegularExpression>
 #include <QPluginLoader>
@@ -164,14 +165,15 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 		createTree(root->filePath(), root);
 	}
 
-	if (QSet<QString>({"txt", "c", "log"}).contains(info.completeSuffix()) /*&& info.size() < 8092*/)
+	QFile file(info.filePath());
+	if (file.open(QIODevice::ReadOnly) && QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), file.peek(20)).inherits("text/plain"))
 	{
-		QFile file(info.filePath());
-		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-			return;
-
 		ui->txtDescription->setPlainText(file.readAll());
 		file.close();
+	}
+	else
+	{
+		ui->txtDescription->setPlainText("");
 	}
 }
 
@@ -191,8 +193,59 @@ void LCEdit::startProcess()
 	proc->waitForStarted();
 }
 
-QString GetFirstExistingPath(QFileInfo path)
+QIODevice *LCEdit::getDevice(LCTreeWidgetItem *item)
 {
-	while (!path.exists()) path.setFile(path.path());
-	return path.filePath();
+#ifndef QT_NO_DEBUG
+	qDebug() << "getDevice called for" << item << "(" << item->text(0) << ")";
+#endif
+	CALL_PLUGINS_WITH_RET(QIODevice *, getDevice(item))
+	ret;
+	if (ret.value != nullptr)
+	{
+		item->mutex.lock();
+		return ret.value;
+	}
+	else if (QFileInfo(item->filePath()).isFile())
+	{
+		item->mutex.lock();
+		return new QFile(item->filePath());
+	}
+	else
+	{
+		return nullptr;
+	}
+}
+
+bool LCEdit::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
+{
+#ifndef QT_NO_DEBUG
+	qDebug() << "destroyDevice called for" << item << "(" << item->text(0) <<"," << device << ")";
+#endif
+	CALL_PLUGINS_WITH_RET(bool, destroyDevice(item, device))
+	if (ret.code == ExecPolicy::Continue)
+	{
+		if (qobject_cast<QFile *>(device))
+		{
+			device->close();
+			SAFE_DELETE(device)
+			item->mutex.unlock();
+			return true;
+		}
+		else
+		{
+#ifndef Q_NO_DEBUG
+			qCritical() << "No destructor for device" << device;
+			abort();
+#else
+			qWarning() << "No destructor for device" << device;
+			item->mutex.unlock();
+#endif
+			return false;
+		}
+	}
+	else
+	{
+		item->mutex.unlock();
+		return ret.value;
+	}
 }
