@@ -11,8 +11,11 @@ enum class ExecPolicy {
 	AbortAll
 };
 
-template<class T> struct ReturnValue {
+template<class T> class ReturnValue {
+public:
 	ExecPolicy code;
 	T value;
 	ReturnValue(ExecPolicy c = ExecPolicy::Continue, T v = nullptr) : code(c), value(v) {}
+	ReturnValue(const ReturnValue &ret) : code(ret.code), value(ret.value) { }
+	ReturnValue &operator =(const ReturnValue &ret){ code = ret.code; value = ret.value; return *this; }
 };
