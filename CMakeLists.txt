@@ -47,3 +47,6 @@ if (KF5TextEditor_FOUND)
   add_library(plugin_texteditor SHARED src/plugins/texteditor.cpp ${LCEDIT_UI})
   target_link_libraries(plugin_texteditor Qt5::Widgets KF5::TextEditor liblcedit)
 endif()
+
+add_library(plugin_search SHARED src/plugins/search.cpp src/plugins/search.ui ${LCEDIT_UI})
+target_link_libraries(plugin_search Qt5::Widgets liblcedit)
