@@ -222,7 +222,7 @@ bool LCEdit::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 	qDebug() << "destroyDevice called for" << item << "(" << item->text(0) <<"," << device << ")";
 #endif
 	CALL_PLUGINS_WITH_RET(bool, destroyDevice(item, device))
-	if (ret.code == ExecPolicy::Continue)
+	if (ret.code == ExecPolicy::Continue && device != nullptr)
 	{
 		if (qobject_cast<QFile *>(device))
 		{
