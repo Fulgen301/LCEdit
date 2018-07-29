@@ -59,6 +59,7 @@ foreach(LCPluginInterface *obj, plugins) \
 			continue; \
 		case ExecPolicy::AbortMain: \
 			ret = true; \
+			[[fallthrough]]; \
 		case ExecPolicy::AbortAll: \
 			return; \
 	} \
@@ -136,5 +137,3 @@ private slots:
 public slots:
 	void treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 };
-
-QString GetFirstExistingPath(QFileInfo path);

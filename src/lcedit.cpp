@@ -23,7 +23,7 @@ QString LCTreeWidgetItem::filePath()
 
 LCTreeWidgetItem *LCTreeWidgetItem::getChildByName(const QString &name)
 {
-	for (uint i = 0; i < childCount(); i++)
+	for (auto i = 0; i < childCount(); i++)
 	{
 		if (child(i)->text(0) == name)
 		{
@@ -116,7 +116,7 @@ void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 
 		if (parent != nullptr)
 		{
-			auto *item = createEntry<LCTreeWidgetItem>(parent, i.fileName(), i.filePath());
+			createEntry<LCTreeWidgetItem>(parent, i.fileName(), i.filePath());
 		}
 		else
 		{
@@ -129,6 +129,7 @@ void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 
 void LCEdit::setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 {
+	Q_UNUSED(previous);
 	QStringList cmdLine = ui->txtCmdLine->text().split(" ", QString::SkipEmptyParts);
 	if (cmdLine.length() < 1)
 		cmdLine << "legacyclonk";
@@ -199,7 +200,6 @@ QIODevice *LCEdit::getDevice(LCTreeWidgetItem *item)
 	qDebug() << "getDevice called for" << item << "(" << item->text(0) << ")";
 #endif
 	CALL_PLUGINS_WITH_RET(QIODevice *, getDevice(item))
-	ret;
 	if (ret.value != nullptr)
 	{
 		item->mutex.lock();
@@ -239,8 +239,8 @@ bool LCEdit::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 #else
 			qWarning() << "No destructor for device" << device;
 			item->mutex.unlock();
-#endif
 			return false;
+#endif
 		}
 	}
 	else
