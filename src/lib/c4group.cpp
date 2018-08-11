@@ -323,12 +323,17 @@ void C4Group::open(bool recursive)
 			grp.close();
 			return;
 		}
-		QString tempPath = QDir::temp().absoluteFilePath(QStringLiteral("c4group-") + QFileInfo(path).fileName());
-		QFile::remove(tempPath);
-		Q_ASSERT(QFile::copy(path, tempPath));
-		tmp.setFileName(tempPath);
-		tmp.open(QIODevice::ReadWrite);
-		QByteArray magic = tmp.peek(2);
+		QTemporaryFile temp;
+		QFile file(path);
+		if (!file.open(QIODevice::ReadOnly))
+		{
+			throw C4GroupException(QStringLiteral("Error at opening file path: %1").arg(file.errorString()));
+		}
+		temp.open();
+		TRANSFER_CONTENTS(file, temp)
+		file.close();
+		temp.seek(0);
+		QByteArray magic = temp.peek(2);
 		if (
 				(static_cast<uchar>(magic[0]) != gz_magic_new[0] && static_cast<uchar>(magic[0]) != gz_magic_old[0]) ||
 				(static_cast<uchar>(magic[1]) != gz_magic_new[1] && static_cast<uchar>(magic[1]) != gz_magic_old[1]))
@@ -336,12 +341,12 @@ void C4Group::open(bool recursive)
 			throw C4GroupException("File is not a c4group file");
 		}
 #undef EQUAL
-		tmp.write(QByteArrayLiteral("\x1f\x8b"));
-		tmp.close();
+		temp.write(QByteArrayLiteral("\x1f\x8b"));
+		temp.close();
 		content = new QBuffer;
 		content->open(QIODevice::ReadWrite);
 		{
-			gzFile f = gzopen(QFile::encodeName(tempPath).data(), "r");
+			gzFile f = gzopen(QFile::encodeName(temp.fileName()).data(), "r");
 			if (f == Z_NULL)
 			{
 				throw new C4GroupException(QStringLiteral("Error at gzopen (%1)").arg(strerror(errno)));
@@ -371,7 +376,6 @@ void C4Group::open(bool recursive)
 #define SAFE_DELETE(x) if (x != nullptr) { delete x; x = nullptr; }
 void C4Group::close()
 {
-	tmp.remove();
 	SAFE_DELETE(root)
 	SAFE_DELETE(content)
 }

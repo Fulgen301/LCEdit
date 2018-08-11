@@ -133,7 +133,6 @@ private:
 	void openFolder(QString dir = "", C4GroupDirectory *parentGroup = nullptr);
 	QDataStream stream;
 	QString path;
-	QFile tmp;
 	bool packed = true;
 	bool recursive = true;
 	friend class C4GroupDirectory;
