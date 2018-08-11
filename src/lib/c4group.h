@@ -72,7 +72,7 @@ private:
 	friend QDataStream &operator <<(QDataStream &, const C4GroupEntry &);
 };
 
-/* C4GroupFile is its own QIODevice, as writing directly to the group stream might damage the group file if
+/* C4GroupFile has its own QIODevice, as writing directly to the group stream might damage the group file if
  * sensible data (e.g. the next file's contents) are overwritten. */
 
 class C4GroupFile : public C4GroupEntry
