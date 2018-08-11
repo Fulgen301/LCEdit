@@ -330,11 +330,12 @@ void C4Group::open(bool recursive)
 		tmp.open(QIODevice::ReadWrite);
 		QByteArray magic = tmp.peek(2);
 		if (
-				(magic[0] != gz_magic_new[0] && magic[0] != gz_magic_old[0]) ||
-				(magic[1] != gz_magic_new[1] && magic[1] != gz_magic_old[1]))
+				(static_cast<uchar>(magic[0]) != gz_magic_new[0] && static_cast<uchar>(magic[0]) != gz_magic_old[0]) ||
+				(static_cast<uchar>(magic[1]) != gz_magic_new[1] && static_cast<uchar>(magic[1]) != gz_magic_old[1]))
 		{
 			throw C4GroupException("File is not a c4group file");
 		}
+#undef EQUAL
 		tmp.write(QByteArrayLiteral("\x1f\x8b"));
 		tmp.close();
 		content = new QBuffer;
