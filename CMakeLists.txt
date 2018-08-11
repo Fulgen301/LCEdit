@@ -18,6 +18,7 @@ set(LCEDIT_UI src/include.h src/lcedit.ui) # src/include.h is needed because it 
 
 set(LIBLCEDIT_SRC
 	src/lcedit.cpp
+	src/lib/lcsettings.cpp
 	${LCEDIT_UI})
 
 set(LCEDIT_SRC
