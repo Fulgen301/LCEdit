@@ -15,6 +15,7 @@ void C4GroupPlugin::init(LCEdit *editor)
 
 ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
+	Q_UNUSED(base);
 	if (parent == nullptr || map.contains(parent))
 		return ExecPolicy::Continue;
 
@@ -25,6 +26,7 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	}
 	catch (C4GroupException e)
 	{
+		delete grp;
 		return ExecPolicy::Continue;
 	}
 
