@@ -42,23 +42,22 @@ QDataStream &operator <<(QDataStream &stream, const C4GroupEntry &entry)
 	stream.setVersion(QDataStream::Qt_1_0);
 	if (entry.parentGroup == nullptr) // top level group folder
 	{
-		__builtin_trap();
 		return stream;
 	}
 
 	stream.writeRawData(entry.fileName.leftJustified(255, '\0', true).constData(), 256);
 	stream << NullBytes(4);
-	stream << (int32_t) 1234567;
+	stream << static_cast<int32_t>(1234567);
 	if (dynamic_cast<const C4GroupDirectory *>(&entry))
 	{
-		stream << (int32_t) 1;
+		stream << static_cast<int32_t>(1);
 	}
 	else
 	{
-		stream << (int32_t) 0;
+		stream << static_cast<int32_t>(0);
 	}
 	stream << static_cast<int32_t>(entry.sizeInBytes()) << NullBytes(4) << entry.relativeContentPosition;
-	stream << (qint32) entry.lastModification << entry.checksumType << entry.checksum;
+	stream << static_cast<int32_t>(entry.lastModification) << entry.checksumType << entry.checksum;
 	stream << entry.executable;
 	stream << NullBytes(26);
 	return stream;
@@ -73,7 +72,7 @@ QDataStream &operator <<(QDataStream &stream, C4GroupFile &entry)
 	if (device->size() <= entry.contentPosition())
 	{
 		Q_ASSERT(device->seek(device->size()));
-		stream << NullBytes(entry.contentPosition() - device->size());
+		stream << NullBytes(static_cast<uint>(entry.contentPosition() - device->size()));
 	}
 	device->seek(entry.contentPosition());
 	entry->open(QIODevice::ReadOnly);
@@ -103,9 +102,9 @@ QDataStream &operator <<(QDataStream &stream, const C4GroupDirectory &entry)
 	header.setByteOrder(QDataStream::LittleEndian);
 
 	header.writeRawData("RedWolf Design GrpFolder", 25);
-	header << NullBytes(3) << (int32_t) 1 << (int32_t) 2 << (int32_t) entry.children.length();
+	header << NullBytes(3) << static_cast<int32_t>(1) << static_cast<int32_t>(2) << static_cast<int32_t>(entry.children.length());
 	header.writeRawData(entry.author.leftJustified(31, '\0', true).constData(), 32);
-	header << NullBytes(32) << (quint32) entry.creationDate << entry.original << NullBytes(92);
+	header << NullBytes(32) << entry.creationDate << entry.original << NullBytes(92);
 	entry.memScramble(buf);
 	stream.writeRawData(buf.data(), buf.length());
 	int32_t nextContentPosition = ENTRYCORE_SIZE * entry.children.length();
@@ -118,13 +117,10 @@ QDataStream &operator <<(QDataStream &stream, const C4GroupDirectory &entry)
 		device->seek(e->contentPosition());
 		if (auto *file = dynamic_cast<C4GroupFile *>(e))
 		{
-			(void) file;
-			int32_t p = file->contentPosition();
 			stream << *file;
 		}
 		else if (auto *dir = dynamic_cast<C4GroupDirectory *>(e))
 		{
-			int32_t p = dir->contentPosition();
 			stream << *dir;
 		}
 		else
@@ -181,7 +177,6 @@ QDataStream &operator >>(QDataStream &stream, C4GroupDirectory &entry)
 	header >> NullBytes(92);
 
 	QIODevice *device = stream.device();
-	qint64 pos = device->pos();
 	for (int32_t i = 0; i < entry.fileSize; i++)
 	{
 		qint64 pos = entry.contentPosition() + HEADER_SIZE + ENTRYCORE_SIZE * i;
@@ -234,6 +229,7 @@ C4GroupFile::C4GroupFile() : device(new QBuffer)
 
 C4GroupFile::~C4GroupFile()
 {
+	delete device;
 }
 
 void C4GroupFile::updateCRC32()
@@ -244,7 +240,7 @@ void C4GroupFile::updateCRC32()
 	{
 		char buf[BLOCKSIZE];
 		qint64 len = device->read(buf, BLOCKSIZE);
-		checksum = crc32(checksum, (Bytef *) buf, len);
+		checksum = crc32(checksum, reinterpret_cast<Bytef *>(buf), len);
 	}
 	while (!device->atEnd());
 	checksumType = 0x01;
@@ -282,7 +278,7 @@ int32_t C4GroupDirectory::sizeInBytes() const
 	return size;
 }
 
-C4Group::C4Group(const QString &grp, QIODevice *device) : path(QDir(grp).absolutePath()), content(device)
+C4Group::C4Group(const QString &grp, QIODevice *device) : content(device), path(QDir(grp).absolutePath())
 {
 }
 
@@ -293,7 +289,7 @@ C4Group::~C4Group()
 
 void C4Group::open(bool recursive)
 {
-	recursive = recursive;
+	this->recursive = recursive;
 	if (content == nullptr)
 	{
 		QFileInfo info(path);
@@ -332,14 +328,13 @@ void C4Group::open(bool recursive)
 		Q_ASSERT(QFile::copy(path, tempPath));
 		tmp.setFileName(tempPath);
 		tmp.open(QIODevice::ReadWrite);
-		QByteArray magic = tmp.read(2);
+		QByteArray magic = tmp.peek(2);
 		if (
 				(magic[0] != gz_magic_new[0] && magic[0] != gz_magic_old[0]) ||
 				(magic[1] != gz_magic_new[1] && magic[1] != gz_magic_old[1]))
 		{
 			throw C4GroupException("File is not a c4group file");
 		}
-		tmp.seek(0);
 		tmp.write(QByteArrayLiteral("\x1f\x8b"));
 		tmp.close();
 		content = new QBuffer;
@@ -460,11 +455,11 @@ void C4Group::pack(int compression)
 
 	content->seek(0);
 	char buf[BLOCKSIZE];
-	int len;
+	qint64 len;
 	do
 	{
 		len = content->read(buf, BLOCKSIZE);
-		gzwrite(f, buf, len);
+		gzwrite(f, buf, static_cast<uint32_t>(qMax<qint64>(len, 0)));
 	}
 	while (!content->atEnd());
 	gzclose(f);
@@ -551,7 +546,7 @@ void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 			f->group = this;
 			f->stream = &stream;
 			f->fileName = QFile::encodeName(info.fileName());
-			f->fileSize = info.size();
+			f->fileSize = static_cast<int32_t>(info.size());
 			f->executable = info.isExecutable();
 			f->lastModification = static_cast<uint32_t>(info.lastModified().toSecsSinceEpoch());
 			SAFE_DELETE(f->device)
