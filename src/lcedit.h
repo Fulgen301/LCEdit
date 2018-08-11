@@ -1,9 +1,7 @@
 #pragma once
 
-#include "include.h"
 #include <QByteArray>
 #include <QDebug>
-#include <QDir>
 #include <QFile>
 #include <QFileIconProvider>
 #include <QFileInfo>
@@ -12,28 +10,30 @@
 #include <QMutex>
 #include <QProcess>
 #include <QSettings>
+#include <QTemporaryFile>
 #include <QTreeWidgetItem>
 #include <cstddef>
 #include <cstdint>
+#include "include.h"
 
-#if 0 // FIXME: Open the right directory
-#ifdef Q_OS_WIN
-#define C4CFG_ConfigPath R"(HKEY_CURRENT_USERS\Software\RedWolf Design\LegacyClonk)";
-#define C4CFG_Format QSettings::NativeFormat
-#else
-#define C4CFG_Format QSettings::IniFormat
-#if defined(Q_OS_MACOS)
-#define C4CFG_ConfigPath QDir(qEnvironmentVariable("HOME")).absoluteFilePath("Library/Preferences/legacyclonk.config")
-#else
-#define C4CFG_ConfigPath QDir(qEnvironmentVariable("HOME")).absoluteFilePath(".legacyclonk/config")
-#ifndef Q_OS_UNIX
-#warning Using $HOME/.legacyclonk/config as Clonk config file. This might not be the right choice for your operating system.
-#endif // Q_OS_UNIX
-#endif // Q_OS_MACOS
-#endif // Q_OS_WIN
-#endif
+namespace Ui {
 class LCEdit;
-class LCTreeWidgetItem;
+}
+
+enum class ExecPolicy {
+	Continue = 1,
+	AbortMain,
+	AbortAll
+};
+
+template<class T> class ReturnValue {
+public:
+	ExecPolicy code;
+	T value;
+	ReturnValue(ExecPolicy c = ExecPolicy::Continue, T v = nullptr) : code(c), value(v) {}
+	ReturnValue(const ReturnValue &ret) : code(ret.code), value(ret.value) { }
+	ReturnValue &operator =(const ReturnValue &ret){ code = ret.code; value = ret.value; return *this; }
+};
 
 class LCPluginInterface
 {
@@ -46,41 +46,6 @@ public:
 	virtual ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) = 0;
 	virtual ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) = 0;
 };
-
-#define LCPlugin_Iid "org.legacyclonk.LegacyClonk.LCEdit.LCPluginInterface"
-Q_DECLARE_INTERFACE(LCPluginInterface, LCPlugin_Iid)
-
-#define CALL_PLUGINS(x) bool ret = false; \
-foreach(LCPluginInterface *obj, plugins) \
-{ \
-	switch (obj->x) \
-	{ \
-		case ExecPolicy::Continue: \
-			continue; \
-		case ExecPolicy::AbortMain: \
-			ret = true; \
-			[[fallthrough]]; \
-		case ExecPolicy::AbortAll: \
-			return; \
-	} \
-} \
-if (ret) return;
-
-#define CALL_PLUGINS_WITH_RET(t, x) \
-	ReturnValue<t> ret(ExecPolicy::Continue, static_cast<t>(NULL)); \
-	foreach (LCPluginInterface *plugin, plugins) \
-	{ \
-		ret = plugin->x; \
-		if (ret.code != ExecPolicy::Continue) \
-		{ \
-			break; \
-		} \
-	}
-
-
-namespace Ui {
-class LCEdit;
-}
 
 class LCTreeWidgetItem : public QTreeWidgetItem
 {
