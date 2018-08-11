@@ -498,6 +498,12 @@ C4GroupEntry *C4Group::getChildByGroupPath(const QString &path)
 	return ret;
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
+#define TIMESTAMP(x) static_cast<uint32_t>((x).toSecsSinceEpoch())
+#else
+#define TIMESTAMP(x) static_cast<uint32_t>((x).toMSecsSinceEpoch() / 1000)
+#endif
+
 void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 {
 	if (dir == "")
@@ -534,8 +540,8 @@ void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 			d->executable = info.isExecutable();
 			openFolder(i.filePath(), d);
 			d->fileSize = d->children.length();
-			d->creationDate = static_cast<uint32_t>(info.created().toSecsSinceEpoch());
-			d->lastModification = static_cast<uint32_t>(info.lastModified().toSecsSinceEpoch());
+			d->creationDate = TIMESTAMP(info.created());
+			d->lastModification = TIMESTAMP(info.lastModified());
 			d->original = d->author == QByteArrayLiteral("RedWolf Design") ? 1234567 : 0;
 			parentGroup->children.append(dynamic_cast<C4GroupEntry *>(d));
 		}
@@ -548,7 +554,7 @@ void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 			f->fileName = QFile::encodeName(info.fileName());
 			f->fileSize = static_cast<int32_t>(info.size());
 			f->executable = info.isExecutable();
-			f->lastModification = static_cast<uint32_t>(info.lastModified().toSecsSinceEpoch());
+			f->lastModification = TIMESTAMP(info.lastModified());
 			SAFE_DELETE(f->device)
 			f->device = new QFile(info.absoluteFilePath());
 			f->updateCRC32();
@@ -560,4 +566,5 @@ void C4Group::openFolder(QString dir, C4GroupDirectory *parentGroup)
 	packed = false;
 //	qt_ntfs_permission_lookup--;
 }
+
 #undef SAFE_DELETE
