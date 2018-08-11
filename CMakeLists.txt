@@ -25,7 +25,7 @@ set(LCEDIT_SRC
   ${LCEDIT_UI}
 )
 
-set (C4GROUP_SRC src/lib/c4group.cpp)
+set (LIBC4GROUP_SRC src/lib/c4group.cpp)
 set (PLUGIN_C4GROUP_SRC src/plugins/c4group.cpp src/plugins/c4group.h)
 
 # Create code from a list of Qt designer ui files.
@@ -38,7 +38,7 @@ add_executable(lcedit ${LCEDIT_SRC})
 target_link_libraries(liblcedit Qt5::Core Qt5::Widgets)
 target_link_libraries(lcedit Qt5::Core Qt5::Widgets liblcedit)
 
-add_library(libc4group SHARED ${C4GROUP_SRC})
+add_library(libc4group SHARED ${LIBC4GROUP_SRC})
 target_link_libraries(libc4group Qt5::Core ${ZLIB_LIBRARIES})
 add_library(plugin_c4group SHARED ${PLUGIN_C4GROUP_SRC} ${LCEDIT_UI})
 target_link_libraries(plugin_c4group Qt5::Widgets libc4group liblcedit)
