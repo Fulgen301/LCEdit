@@ -16,8 +16,8 @@ extern Q_CORE_EXPORT int qt_ntfs_permission_lookup;
 #define BLOCKSIZE 1024
 #define TRANSFER_CONTENTS(x, y) while (!(x).atEnd()) { (y).write((x).read(BLOCKSIZE)); }
 
-const int32_t HEADER_SIZE = 204;
-const int32_t ENTRYCORE_SIZE = 316;
+const qint32 HEADER_SIZE = 204;
+const qint32 ENTRYCORE_SIZE = 316;
 
 #if Q_BYTE_ORDER == Q_BIG_ENDIAN
 #warning C4Group uses little endian as byte order in order to maintain compatibility with \
@@ -57,15 +57,15 @@ public: // yes, this is public on purpose
 	C4Group *group;
 	C4GroupDirectory *parentGroup = nullptr;
 	virtual qint64 size() const { return fileSize; } // yes, we provide both, as the size specified in a directory's TOC'
-	virtual int32_t sizeInBytes() const { return size(); } // entry is the count of children, not the size in bytes
-	int32_t contentPosition();
+	virtual qint32 sizeInBytes() const { return size(); } // entry is the count of children, not the size in bytes
+	qint32 contentPosition();
 public:
 	QByteArray fileName = ""; // MAX_FNAME is 255 bytes on most filesystems.
-	int32_t fileSize = 0;
-	int32_t relativeContentPosition = 0;
-	uint32_t lastModification = 0;
+	qint32 fileSize = 0;
+	qint32 relativeContentPosition = 0;
+	quint32 lastModification = 0;
 	char checksumType = 0x0;
-	uint32_t checksum = 0;
+	quint32 checksum = 0;
 	char executable = 0x0;
 	QDataStream *stream = nullptr;
 private:
@@ -95,11 +95,11 @@ class C4GroupDirectory : public C4GroupEntry
 {
 public:
 	~C4GroupDirectory();
-	int32_t sizeInBytes() const;
+	qint32 sizeInBytes() const;
 public:
 	QByteArray author = "";
-	uint32_t creationDate = 0;
-	int32_t original = 1234567;
+	quint32 creationDate = 0;
+	qint32 original = 1234567;
 	QList<C4GroupEntry *>children;
 private:
 	void memScramble(QByteArray &data) const;
