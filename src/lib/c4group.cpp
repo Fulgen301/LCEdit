@@ -111,6 +111,7 @@ QDataStream &operator <<(QDataStream &stream, const C4GroupDirectory &entry)
 	foreach(C4GroupEntry *e, entry.children)
 	{
 		e->relativeContentPosition = nextContentPosition;
+		Q_ASSERT(e->contentPosition() != 0);
 		stream << *e;
 		QIODevice *device = stream.device();
 		qint64 pos = device->pos();
@@ -349,7 +350,7 @@ void C4Group::open(bool recursive)
 			gzFile f = gzopen(QFile::encodeName(temp.fileName()).data(), "r");
 			if (f == Z_NULL)
 			{
-				throw new C4GroupException(QStringLiteral("Error at gzopen (%1)").arg(strerror(errno)));
+				throw C4GroupException(QStringLiteral("Error at gzopen (%1)").arg(strerror(errno)));
 			}
 
 			char buf[BLOCKSIZE];
@@ -441,38 +442,44 @@ void C4Group::pack(int compression)
 {
 	packed = true;
 	Q_ASSERT(root != nullptr);
+	content->close();
 	SAFE_DELETE(content);
 	QFileInfo info(path);
 	QString tempPath = info.dir().absoluteFilePath(info.baseName() + ".000");
 	content = new QFile(tempPath);
-	content->open(QIODevice::ReadWrite | QIODevice::Truncate);
+	if (Q_UNLIKELY(!content->open(QIODevice::ReadWrite | QIODevice::Truncate)))
+	{
+		throw C4GroupException(QStringLiteral("Error at opening file %1: %2").arg(tempPath).arg(content->errorString()));
+	}
 	stream.setDevice(content);
 	stream.setVersion(QDataStream::Qt_1_0);
 	stream.setByteOrder(QDataStream::LittleEndian);
 	stream << *root;
+	content->seek(0);
+
+	QDir(path).removeRecursively();
+
 	char mode[3];
 	sprintf(mode, "w%d", compression);
 	gzFile f = gzopen(QFile::encodeName(path).constData(), mode);
 	if (f == Z_NULL)
 	{
-		throw new C4GroupException(QStringLiteral("Error at gzopen (%1)").arg(strerror(errno)));
+		throw C4GroupException(QStringLiteral("Error at gzopen (%1)").arg(strerror(errno)));
 	}
 
-	content->seek(0);
 	char buf[BLOCKSIZE];
 	qint64 len;
 	do
 	{
 		len = content->read(buf, BLOCKSIZE);
-		gzwrite(f, buf, static_cast<uint32_t>(qMax<qint64>(len, 0)));
+		if (Q_UNLIKELY(gzwrite(f, buf, static_cast<uint32_t>(qMax<qint64>(len, 0))) < 0))
+		{
+			throw C4GroupException(QStringLiteral("Error at gzwrite (%1)").arg(gzerror(f, nullptr)));
+		}
 	}
 	while (!content->atEnd());
 	gzclose(f);
-	qobject_cast<QFile *>(content)->rename(path);
-	QFile output(path);
-	output.open(QIODevice::ReadWrite);
-	output.write(QByteArrayLiteral("\x1e\x8c"));
-	output.close();
+	QFile::remove(tempPath);
 }
 
 C4GroupEntry *C4Group::getChildByGroupPath(const QString &path)
