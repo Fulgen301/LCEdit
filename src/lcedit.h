@@ -50,12 +50,17 @@ public:
 class LCTreeWidgetItem : public QTreeWidgetItem
 {
 #define CONSTRUCTOR(x) LCTreeWidgetItem(x *parent = nullptr) : QTreeWidgetItem(parent) {}
+
 public:
 	CONSTRUCTOR(QTreeWidgetItem)
 	CONSTRUCTOR(QTreeWidget)
 	~LCTreeWidgetItem() = default;
 	QString filePath();
-	LCTreeWidgetItem *getChildByName(const QString &name);
+	LCTreeWidgetItem *getChildByName(const QString &name, Qt::CaseSensitivity sensitivity = Qt::CaseSensitive);
+	inline void deleteChildren()
+	{
+		qDeleteAll(takeChildren());
+	}
 	QMutex mutex;
 };
 
@@ -87,13 +92,13 @@ public:
 		root->setText(0, fileName);
 		root->setText(1, filePath);
 		root->setIcon(0, QFileIconProvider().icon(QFileInfo(filePath)));
-		ui->treeWidget->sortItems(0, Qt::AscendingOrder);
 		return root;
 	}
 
 	[[nodiscard]]
 	QIODevice *getDevice(LCTreeWidgetItem *item);
 	bool destroyDevice(LCTreeWidgetItem *item, QIODevice *device);
+	LCTreeWidgetItem *getItemByPath(const QString &path, LCTreeWidgetItem *parent = nullptr);
 
 private slots:
 	void setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous);

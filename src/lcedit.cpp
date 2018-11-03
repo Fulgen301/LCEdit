@@ -5,6 +5,7 @@
 #include <QMutex>
 #include <QRegularExpression>
 #include <QPluginLoader>
+#include <QTimer>
 #include <algorithm>
 #include "lcedit.h"
 // #include "ui_lcedit.h"
@@ -21,11 +22,11 @@ QString LCTreeWidgetItem::filePath()
 	return text(1);
 }
 
-LCTreeWidgetItem *LCTreeWidgetItem::getChildByName(const QString &name)
+LCTreeWidgetItem *LCTreeWidgetItem::getChildByName(const QString &name, Qt::CaseSensitivity sensitivity)
 {
 	for (auto i = 0; i < childCount(); i++)
 	{
-		if (child(i)->text(0) == name)
+		if (child(i)->text(0).compare(name, sensitivity) == 0)
 		{
 			return dynamic_cast<LCTreeWidgetItem *>(child(i));
 		}
@@ -102,6 +103,7 @@ void LCEdit::loadPlugin(LCPluginInterface *plugin)
 
 void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
+	QTimer::singleShot(0, [this]() { ui->treeWidget->sortItems(0, Qt::AscendingOrder); });
 	CALL_PLUGINS(createTree(base, parent))
 	if (!QFileInfo(base.path()).isDir())
 		return;
@@ -124,7 +126,6 @@ void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 		}
 		i.next();
 	}
-//	ui->treeWidget->sortItems(0, Qt::AscendingOrder);
 }
 
 void LCEdit::setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous)
@@ -154,20 +155,21 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 		bool state = ui->lblName->isVisible();
 		ui->lblName->setText(root->text(0));
 		state ? ui->lblName->show() : ui->lblName->hide();
+
+		QFileInfo info(root->filePath());
+		if (root->childCount() == 0)
+		{
+			createTree(root->filePath(), root);
+		}
 	}
+
 	CALL_PLUGINS(treeItemChanged(root, dynamic_cast<LCTreeWidgetItem *>(previous)))
 
 	if (root == nullptr)
 		return;
 
-	QFileInfo info(root->filePath());
-	if (root->childCount() == 0)
-	{
-		createTree(root->filePath(), root);
-	}
-
-	QFile file(info.filePath());
-	if (file.open(QIODevice::ReadOnly) && QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), file.peek(20)).inherits("text/plain"))
+	QFile file(root->filePath());
+	if (file.open(QIODevice::ReadOnly) && QMimeDatabase().mimeTypeForFileNameAndData(file.fileName(), file.peek(20)).inherits("text/plain"))
 	{
 		ui->txtDescription->setPlainText(file.readAll());
 		file.close();
@@ -248,4 +250,36 @@ bool LCEdit::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 		item->mutex.unlock();
 		return ret.value;
 	}
+}
+
+LCTreeWidgetItem *LCEdit::getItemByPath(const QString &path, LCTreeWidgetItem *parent)
+{
+	QStringList parts = QDir::fromNativeSeparators(path).split('/', QString::SkipEmptyParts);
+	if (parts.length() == 0)
+	{
+		return nullptr;
+	}
+	for (const QString &part : qAsConst(parts))
+	{
+		if (parent == nullptr)
+		{
+			QList<QTreeWidgetItem *> result = ui->treeWidget->findItems(part, Qt::MatchFixedString);
+			Q_ASSERT(result.length() < 2);
+			if (result.length() == 0)
+			{
+				return nullptr;
+			}
+
+			parent = dynamic_cast<LCTreeWidgetItem *>(result[0]);
+		}
+		else
+		{
+			parent = parent->getChildByName(part);
+			if (parent == nullptr)
+			{
+				return nullptr;
+			}
+		}
+	}
+	return parent;
 }
