@@ -1,8 +1,7 @@
-#undef new
-#undef delete
-#undef LineFeed
 #include <QDir>
-#include <QMap>
+#include <QHash>
+#include <QList>
+#include <QTimer>
 #include "../lcedit.h"
 #include "../lib/c4group.h"
 
@@ -24,5 +23,7 @@ public:
 private:
 	void createRealTree(LCTreeWidgetItem *parent, C4GroupDirectory *dir);
 	LCEdit *m_editor;
-	QMap<LCTreeWidgetItem *, C4GroupEntry *> map;
+	QHash<LCTreeWidgetItem *, C4Group *> rootItems;
+private slots:
+	void itemCollapsed(QTreeWidgetItem *item);
 };

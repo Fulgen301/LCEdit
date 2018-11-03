@@ -11,12 +11,13 @@
 void C4GroupPlugin::init(LCEdit *editor)
 {
 	m_editor = editor;
+	connect(m_editor->ui->treeWidget, &QTreeWidget::itemCollapsed, this, &C4GroupPlugin::itemCollapsed);
 }
 
 ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
 	Q_UNUSED(base);
-	if (parent == nullptr || map.contains(parent))
+	if (parent == nullptr || QFileInfo(parent->filePath()).isDir() || parent->data(2, Qt::UserRole).canConvert<C4GroupEntry *>())
 		return ExecPolicy::Continue;
 
 	auto *grp = new C4Group(parent->filePath());
@@ -30,47 +31,30 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 		return ExecPolicy::Continue;
 	}
 
-	if (!grp->isPacked())
-	{
-		delete grp;
-		return ExecPolicy::Continue;
-	}
-
 	createRealTree(parent, grp->root);
+	rootItems[parent] = grp;
 	return ExecPolicy::AbortMain;
 }
 
 void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, C4GroupDirectory *dir)
 {
-	foreach (C4GroupEntry *e, dir->children)
+	for (QObject *e : qAsConst(dir->children()))
 	{
-		LCTreeWidgetItem *entry = m_editor->createEntry<LCTreeWidgetItem>(parent, e->fileName, QDir(parent->filePath()).absoluteFilePath(e->fileName));
-		map[entry] = e;
-		auto *d = dynamic_cast<C4GroupDirectory *>(e);
+		auto *entry = qobject_cast<C4GroupEntry *>(e);
+		LCTreeWidgetItem *item = m_editor->createEntry<LCTreeWidgetItem>(parent, entry->fileName, QDir(parent->filePath()).absoluteFilePath(entry->fileName));
+		item->setData(2, Qt::UserRole, QVariant::fromValue<C4GroupEntry *>(entry));
+		auto *d = qobject_cast<C4GroupDirectory *>(e);
 		if (d != nullptr)
 		{
-			createRealTree(entry, d);
+			createRealTree(item, d);
 		}
 	}
 }
 
 ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
-	if (current == nullptr || previous == nullptr || !map.contains(previous))
-		return ExecPolicy::Continue;
-
-	if (map.contains(current) && &(*(map[current]->group)) == &(*(map[previous]->group)))
-		return ExecPolicy::Continue;
-
-	C4Group *grp = map[previous]->group;
-	if (grp->isPacked())
-	{
-		grp->pack();
-	}
-
-	grp->close();
-	delete grp;
-	map.remove(previous);
+	Q_UNUSED(current);
+	Q_UNUSED(previous);
 	return ExecPolicy::Continue;
 }
 
@@ -81,13 +65,14 @@ int C4GroupPlugin::priority()
 
 ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 {
-	if (!map.contains(item))
+	QVariant role = item->data(2, Qt::UserRole);
+	if (!role.canConvert<C4GroupEntry *>())
 	{
 		return ReturnValue<QIODevice *>();
 	}
 
-	auto *file = dynamic_cast<C4GroupFile *>(map[item]);
-	if (Q_UNLIKELY(file == nullptr) || Q_UNLIKELY(file->device == nullptr))
+	auto *file = qobject_cast<C4GroupFile *>(role.value<C4GroupEntry *>());
+	if (file == nullptr || Q_UNLIKELY(file->device == nullptr))
 	{
 		return ReturnValue<QIODevice *>();
 	}
@@ -98,10 +83,12 @@ ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
 	Q_UNUSED(device);
+
 	// we don't destroy the device here, this is C4Group's concern, NOT OURS
-	if (map.contains(item))
+	QVariant role = item->data(2, Qt::UserRole);
+	if (role.canConvert<C4GroupEntry *>())
 	{
-		auto *f = dynamic_cast<C4GroupFile *>(map[item]);
+		auto *f = qobject_cast<C4GroupFile *>(role.value<C4GroupEntry *>());
 		if (f != nullptr && f->device == device)
 		{
 			return ReturnValue<bool>(ExecPolicy::AbortAll, true);
@@ -109,4 +96,18 @@ ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice
 	}
 
 	return ReturnValue<bool>(ExecPolicy::Continue, false);
+}
+
+void C4GroupPlugin::itemCollapsed(QTreeWidgetItem *item)
+{
+	auto *parent = dynamic_cast<LCTreeWidgetItem *>(item);
+	if (parent == nullptr || !rootItems.contains(parent))
+	{
+		return;
+	}
+	C4Group *group = rootItems[parent];
+	group->close();
+	delete group;
+	rootItems.remove(parent);
+	parent->deleteChildren();
 }
