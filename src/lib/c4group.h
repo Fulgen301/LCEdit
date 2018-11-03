@@ -47,15 +47,15 @@ EXCEPTION_CLASS(C4GroupException)
 
 class C4GroupDirectory;
 
-class C4GroupEntry
+class C4GroupEntry : public QObject
 {
-	Q_GADGET
+	Q_OBJECT
 public:
+	C4GroupEntry(C4GroupEntry *parent) : QObject(qobject_cast<QObject *>(parent)) {}
 	virtual ~C4GroupEntry() = default;
 
 public: // yes, this is public on purpose
 	C4Group *group;
-	C4GroupDirectory *parentGroup = nullptr;
 	virtual qint64 size() const { return fileSize; } // yes, we provide both, as the size specified in a directory's TOC'
 	virtual qint32 sizeInBytes() const { return size(); } // entry is the count of children, not the size in bytes
 	qint32 contentPosition();
@@ -77,30 +77,29 @@ private:
 
 class C4GroupFile : public C4GroupEntry
 {
+	Q_OBJECT
 public:
-	C4GroupFile();
+	C4GroupFile(C4GroupDirectory *parent);
 	~C4GroupFile();
 	void updateCRC32();
 	QIODevice *device = nullptr;
 	qint64 size() const override { return device->size(); }
-	QIODevice *operator ->()
-	{
-		return device;
-	}
+
 	friend QDataStream &operator <<(QDataStream &, C4GroupFile &);
 	friend QDataStream &operator >>(QDataStream &, C4GroupFile &);
 };
 
 class C4GroupDirectory : public C4GroupEntry
 {
+	Q_OBJECT
 public:
-	~C4GroupDirectory();
+	C4GroupDirectory(C4GroupDirectory *parent = nullptr) : C4GroupEntry(parent) {}
+	~C4GroupDirectory() = default;
 	qint32 sizeInBytes() const;
 public:
 	QByteArray author = "";
 	quint32 creationDate = 0;
 	qint32 original = 1234567;
-	QList<C4GroupEntry *>children;
 private:
 	void memScramble(QByteArray &data) const;
 	friend class C4Group;
