@@ -171,7 +171,7 @@ void FileSearchPlugin::searchModeChanged(int index)
 	case Search::Mode::ID:
 		setSearchFunc([](const QString &term, const QByteArray &line)
 		{
-			QString regex = QStringLiteral(R"((?:^id=%1$|CreateObject\(%1\)))").arg(term);
+			QString regex = QStringLiteral(R"((?:^id=(%1)$|CreateObject\((%1)(,.*|\))))").arg(term);
 			return QRegularExpression(regex).match(line).hasMatch();
 		});
 		break;
