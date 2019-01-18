@@ -1,4 +1,4 @@
-#Copyright (c) 2018, George Tokmaji
+#Copyright (c) 2018-2019, George Tokmaji
 
 #Permission to use, copy, modify, and/or distribute this software for any
 #purpose with or without fee is hereby granted, provided that the above
@@ -20,6 +20,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+
+set(CMAKE_CXX_STANDARD 17)
 
 # Find the QtWidgets library
 find_package(Qt5Core CONFIG REQUIRED)
@@ -65,3 +67,14 @@ endif()
 
 add_library(plugin_search SHARED src/plugins/search.cpp src/plugins/search.ui ${LCEDIT_UI})
 target_link_libraries(plugin_search Qt5::Widgets liblcedit)
+
+if (UNIX)
+  install(TARGETS liblcedit libc4group DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/lcedit")
+  install(TARGETS lcedit DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+  install(TARGETS plugin_c4group plugin_search DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/qt/plugins/lcedit")
+  if (KF5TextEditor_FOUND)
+    install(TARGETS plugin_texteditor DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/plugins/lcedit")
+  endif()
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/lcedit.desktop" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/lcedit.png" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/64x64/apps")
+endif()

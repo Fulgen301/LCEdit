@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=LCEdit
+Exec=lcedit
+Icon=lcedit
+Categories=Development;
+StartupNotify=true
+
