@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ "$TRAVIS_OS_NAME" = "linux"]
+if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
 	sudo add-apt-repository -y ppa:beineri/opt-qt-5.11.0-xenial
 	sudo apt-get update
