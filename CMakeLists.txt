@@ -1,4 +1,4 @@
-#Copyright (c) 2018, George Tokmaji
+#Copyright (c) 2019, George Tokmaji
 
 #Permission to use, copy, modify, and/or distribute this software for any
 #purpose with or without fee is hereby granted, provided that the above
@@ -20,6 +20,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+
+set(CMAKE_CXX_STANDARD 17)
 
 # Find the QtWidgets library
 find_package(Qt5Core CONFIG REQUIRED)
