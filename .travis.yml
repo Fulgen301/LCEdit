@@ -17,4 +17,4 @@ matrix:
 
 before_script:
   - export CXX="$CXXCOMPILER" CC="$CCOMPILER"
-  cmake .
+  cmake . 
