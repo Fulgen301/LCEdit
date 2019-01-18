@@ -21,3 +21,6 @@ script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then source /opt/qt511/bin/qt511-env.sh; fi
   - cmake .
   - make
+
+after_success:
+  - bash scripts/travis_deploy_qt.sh
