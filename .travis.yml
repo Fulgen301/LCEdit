@@ -1,0 +1,20 @@
+language: cpp
+dist: xenial
+sudo: required
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env:
+        - CCOMPILER="gcc-7"
+        - CXXCOMPILER="g++-7"
+
+before_script:
+  - export CXX="$CXXCOMPILER" CC="$CCOMPILER"
+  cmake .
