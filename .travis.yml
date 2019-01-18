@@ -17,7 +17,9 @@ matrix:
         - CXX=g++-7
 
 before_script:
-  - cmake . 
+  - bash scripts/travis_before_script.sh
 
 script:
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then source /opt/qt511/bin/qt511-env.sh; fi
+  - cmake .
   - make
