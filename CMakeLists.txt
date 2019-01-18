@@ -1,4 +1,4 @@
-#Copyright (c) 2019, George Tokmaji
+#Copyright (c) 2018-2019, George Tokmaji
 
 #Permission to use, copy, modify, and/or distribute this software for any
 #purpose with or without fee is hereby granted, provided that the above
@@ -67,3 +67,14 @@ endif()
 
 add_library(plugin_search SHARED src/plugins/search.cpp src/plugins/search.ui ${LCEDIT_UI})
 target_link_libraries(plugin_search Qt5::Widgets liblcedit)
+
+if (UNIX)
+  install(TARGETS liblcedit "${CMAKE_INSTALL_PREFIX}/lib/lcedit")
+  install(TARGETS lcedit "${CMAKE_INSTALL_PREFIX}/bin")
+  install(TARGETS libc4group "${CMAKE_INSTALL_PREFIX}/lib/lcedit")
+  install(TARGETS plugin_c4group "${CMAKE_INSTALL_PREFIX}/lib/qt/plugins/lcedit")
+  if (KF5TextEditor_FOUND)
+    install(TARGETS plugin_texteditor "${CMAKE_INSTALL_PREFIX}/lib/plugins/lcedit")
+  endif()
+  install(TARGETS plugin_search "${CMAKE_INSTALL_PREFIX}/lib/plugins/lcedit")
+endif()
