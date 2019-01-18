@@ -10,6 +10,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-7
+            - qt5-default
+            - qtbase5-dev
       env:
         - CC=gcc-7
         - CXX=g++-7
