@@ -2,6 +2,6 @@
 Type=Application
 Name=LCEdit
 Exec=lcedit
-Categories=Development
+Categories=Development;
 StartupNotify=true
 
