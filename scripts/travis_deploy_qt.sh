@@ -6,15 +6,21 @@
 #
 #THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 #WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-##MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+#MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
 #ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 #WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 #ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+DESTDIR=appdir cmake --build . --target install
+
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 then
-	sudo add-apt-repository -y ppa:forkotov02/opt-qt-5.11.1-trusty
-	sudo apt-get update
-	sudo apt-get install qt511base qt511tools qt511svg
+	linuxdeployqt=linuxdeployqt-continuous-x86_64.AppImage
+	if [[ ! -x $linuxdeployqt ]]; then
+		wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/$linuxdeployqt" || exit 1
+		chmod a+x $linuxdeployqt
+	fi
+	unset QTDIR; unset QT_PLUGIN_PATH ; unset LD_LIBRARY_PATH
+	$linuxdeployqt appdir/usr/share/applications/lcedit.desktop -appimage -no-strip -qmake=/opt/qt511/bin/qmake
 fi
