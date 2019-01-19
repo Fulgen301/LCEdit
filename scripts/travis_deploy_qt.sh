@@ -22,5 +22,5 @@ then
 		chmod a+x $linuxdeployqt
 	fi
 	unset QTDIR; unset QT_PLUGIN_PATH ; unset LD_LIBRARY_PATH
-	$linuxdeployqt appdir/usr/share/applications/lcedit.desktop -appimage -no-strip -qmake=/opt/qt511/bin/qmake
+	./$linuxdeployqt appdir/usr/share/applications/lcedit.desktop -appimage -no-strip -qmake=/opt/qt511/bin/qmake
 fi
