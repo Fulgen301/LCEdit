@@ -23,9 +23,7 @@ script:
   - make
 
 after_success:
-  - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
   - bash scripts/travis_deploy_qt.sh
-  - bash ./upload.sh LCEdit*.AppImage*
 
 branches:
   except:

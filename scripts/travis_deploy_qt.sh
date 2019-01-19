@@ -23,4 +23,6 @@ then
 	fi
 	unset QTDIR; unset QT_PLUGIN_PATH ; unset LD_LIBRARY_PATH
 	./$linuxdeployqt appdir/usr/share/applications/lcedit.desktop -appimage -no-strip -qmake=/opt/qt511/bin/qmake
+	wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
+	bash ./upload.sh LCEdit*.AppImage*
 fi
