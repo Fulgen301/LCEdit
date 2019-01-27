@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+        <id>lcedit</id>
+        <metadata_license>ISC</metadata_license>
+        <project_license>ISC</project_license>
+        <name>LCEdit</name>
+        <summary>A replacement for Clonk Rage's Editor.exe</summary>
+        <description>
+                <p>LCEdit is a replacement for the editor of the game Clonk Rage (http://clonk.de/).</p>
+        </description>
+        <launchable type="desktop-id">lcedit.desktop</launchable>
+        <url type="homepage"></url>
+        <screenshots>
+                <screenshot type="default">
+                        <image></image>
+                </screenshot>
+        </screenshots>
+        <provides>
+                <id>lcedit.desktop</id>
+        </provides>
+</component>
