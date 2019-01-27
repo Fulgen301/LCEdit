@@ -19,17 +19,27 @@
 #include <QMutex>
 #include <QRegularExpression>
 #include <QPluginLoader>
+#include <QStaticPlugin>
 #include <QTimer>
 #include <algorithm>
 #include "lcedit.h"
 // #include "ui_lcedit.h"
 
-#define LOAD(x) auto *plugin = qobject_cast<LCPluginInterface *>((x)); \
-		if (plugin != nullptr) \
-		{ \
-			plugin->init(this); \
-			plugins.append(plugin); \
-		}
+#define LOAD(obj, meta) QJsonObject metaData = (meta).value("MetaData").toObject(); \
+	if ((obj) != nullptr && !pluginNames.contains(metaData.value("name").toString())) \
+{ \
+	auto *plugin = qobject_cast<LCPluginInterface *>(obj); \
+	if (plugin != nullptr) \
+	{ \
+		plugin->init(this); \
+		plugins.append(LCPlugin { \
+			.plugin = plugin, \
+			.metaData = metaData \
+		}); \
+		pluginNames.append(metaData.value("name").toString()); \
+		qDebug() << "Loaded plugin " << metaData.value("name").toString(); \
+	} \
+}
 
 QString LCTreeWidgetItem::filePath()
 {
@@ -79,40 +89,45 @@ LCEdit::~LCEdit()
 void LCEdit::loadPlugins()
 {
 	plugins.clear();
-	foreach (QObject *obj, QPluginLoader::staticInstances())
+	QStringList pluginNames;
+
+	foreach (const QStaticPlugin obj, QPluginLoader::staticPlugins())
 	{
-		LOAD(obj);
+		LOAD(obj.instance(), obj.metaData())
 	}
+
+	QStringList paths = qApp->libraryPaths();
 
 	// from http://doc.qt.io/qt-5/qtwidgets-tools-plugandpaint-app-example.html
 	QDir pluginsDir = QDir(qApp->applicationDirPath());
 
-#if defined(Q_OS_WIN)
-	if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
-		pluginsDir.cdUp();
-#elif defined(Q_OS_MAC)
-	if (pluginsDir.dirName() == "MacOS") {
-		pluginsDir.cdUp();
-		pluginsDir.cdUp();
-		pluginsDir.cdUp();
-	}
-#endif
-	//pluginsDir.cd("plugins");
+	#if defined(Q_OS_WIN)
+		if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
+			pluginsDir.cdUp();
+	#elif defined(Q_OS_MAC)
+		if (pluginsDir.dirName() == "MacOS") {
+			pluginsDir.cdUp();
+			pluginsDir.cdUp();
+			pluginsDir.cdUp();
+		}
+	#endif
+	pluginsDir.cd("plugins");
+	paths << pluginsDir.absolutePath();
 
-	foreach (QString filename, pluginsDir.entryList(QDir::Files))
+	for (const QString &path : qAsConst(paths))
 	{
-		QPluginLoader loader(pluginsDir.absoluteFilePath(filename));
-		LOAD(loader.instance());
+		QDir dir(path);
+		for (const QString &entry : dir.entryList({"lcedit_plugin_*"}))
+		{
+			QPluginLoader loader(dir.absoluteFilePath(entry));
+#ifndef QT_NO_DEBUG
+			qDebug() << "Loading plugin " << loader.fileName();
+#endif
+			LOAD(loader.instance(), loader.metaData())
+		}
 	}
 
-	std::sort(plugins.begin(), plugins.end(), [](LCPluginInterface *a, LCPluginInterface *b) {return a->priority() > b->priority(); });
-}
-
-void LCEdit::loadPlugin(LCPluginInterface *plugin)
-{
-	if (plugin == nullptr)
-		return;
-	//TODO
+	std::sort(plugins.begin(), plugins.end(), [](LCPlugin a, LCPlugin b) {return a.metaData.value("priority").toInt() < b.metaData.value("priority").toInt(); });
 }
 
 void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)

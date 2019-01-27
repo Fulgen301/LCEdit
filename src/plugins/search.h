@@ -45,14 +45,13 @@ class LCDlgSearch;
 class FileSearchPlugin : public QDialog, public LCPluginInterface
 {
 	Q_OBJECT
-	Q_PLUGIN_METADATA(IID LCPlugin_Iid)
+	Q_PLUGIN_METADATA(IID LCPlugin_Iid FILE "search.json")
 	Q_INTERFACES(LCPluginInterface)
 
 public:
 	void init(LCEdit *editor) override;
 	~FileSearchPlugin() override;
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem *parent) override;
-	int priority() override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) override;
 	ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
 	ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;

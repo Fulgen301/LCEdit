@@ -30,9 +30,9 @@ enum class ExecPolicy;
 Q_DECLARE_INTERFACE(LCPluginInterface, LCPlugin_Iid)
 
 #define CALL_PLUGINS(x) bool ret = false; \
-foreach(LCPluginInterface *obj, plugins) \
+foreach(LCPlugin obj, plugins) \
 { \
-	switch (obj->x) \
+	switch (obj.plugin->x) \
 	{ \
 		case ExecPolicy::Continue: \
 			continue; \
@@ -47,9 +47,9 @@ if (ret) return;
 
 #define CALL_PLUGINS_WITH_RET(t, x) \
 	ReturnValue<t> ret(ExecPolicy::Continue, static_cast<t>(NULL)); \
-	foreach (LCPluginInterface *plugin, plugins) \
+	foreach (LCPlugin obj, plugins) \
 	{ \
-		ret = plugin->x; \
+		ret = obj.plugin->x; \
 		if (ret.code != ExecPolicy::Continue) \
 		{ \
 			break; \

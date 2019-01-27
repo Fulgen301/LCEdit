@@ -1,0 +1,5 @@
+{
+	"name" : "TextEditor",
+	"description" : "Replaces the default text view by KDE's KTextEditor, providing advanced editing capability.",
+	"priority" : 1
+}

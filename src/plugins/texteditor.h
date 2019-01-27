@@ -29,14 +29,13 @@
 class TextEditorPlugin : public QObject, public LCPluginInterface
 {
 	Q_OBJECT
-	Q_PLUGIN_METADATA(IID LCPlugin_Iid)
+	Q_PLUGIN_METADATA(IID LCPlugin_Iid FILE "texteditor.json")
 	Q_INTERFACES(LCPluginInterface)
 
 public:
 	~TextEditorPlugin() override;
 	void init(LCEdit *editor) override;
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem * parent) override;
-	int priority() override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem * current, LCTreeWidgetItem * previous) override;
 	ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
 	ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;

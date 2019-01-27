@@ -41,11 +41,6 @@ TextEditorPlugin::~TextEditorPlugin()
 //	SAFE_DELETE(m_texteditor)
 }
 
-int TextEditorPlugin::priority()
-{
-	return 1;
-}
-
 ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
 	SAFE_DELETE(watcher)

@@ -18,6 +18,7 @@
 #include <QFileIconProvider>
 #include <QFileInfo>
 #include <QIODevice>
+#include <QJsonObject>
 #include <QMainWindow>
 #include <QMutex>
 #include <QProcess>
@@ -53,10 +54,14 @@ public:
 	virtual ~LCPluginInterface() {}
 	virtual void init(LCEdit *editor) = 0;
 	virtual ExecPolicy createTree(const QDir &base, LCTreeWidgetItem *parent) = 0;
-	virtual int priority() = 0;
 	virtual ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) = 0;
 	virtual ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) = 0;
 	virtual ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) = 0;
+};
+
+struct LCPlugin {
+	LCPluginInterface *plugin;
+	QJsonObject metaData;
 };
 
 class LCTreeWidgetItem : public QTreeWidgetItem
@@ -91,12 +96,11 @@ private:
 
 	void createTree(const QDir &base, LCTreeWidgetItem *parent = nullptr);
 	void loadPlugins();
-	void loadPlugin(LCPluginInterface *plugin);
 
 public:
 	Ui::LCEdit *ui;
 	QDir m_path;
-	QList<LCPluginInterface *> plugins;
+	QList<LCPlugin> plugins;
 	QString filePath() { return m_path.path(); }
 	template<class T> LCTreeWidgetItem *createEntry(T *parent, QString fileName, QString filePath)
 	{

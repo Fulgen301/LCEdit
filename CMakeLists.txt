@@ -43,7 +43,6 @@ set(LCEDIT_SRC
 )
 
 set (LIBC4GROUP_SRC src/lib/c4group.cpp)
-set (PLUGIN_C4GROUP_SRC src/plugins/c4group.cpp src/plugins/c4group.h)
 
 # Create code from a list of Qt designer ui files.
 #qt5_wrap_ui(src/main.cpp src/include.h src/lcedit.ui)
@@ -57,23 +56,27 @@ target_link_libraries(lcedit Qt5::Core Qt5::Widgets liblcedit)
 
 add_library(libc4group SHARED ${LIBC4GROUP_SRC})
 target_link_libraries(libc4group Qt5::Core ${ZLIB_LIBRARIES})
-add_library(plugin_c4group SHARED ${PLUGIN_C4GROUP_SRC} ${LCEDIT_UI})
+
+add_library(plugin_c4group SHARED src/plugins/c4group.cpp src/plugins/c4group.json ${LCEDIT_UI})
 target_link_libraries(plugin_c4group Qt5::Widgets libc4group liblcedit)
+set_target_properties(plugin_c4group PROPERTIES PREFIX "lcedit_")
 
 if (KF5TextEditor_FOUND)
-  add_library(plugin_texteditor SHARED src/plugins/texteditor.cpp ${LCEDIT_UI})
+  add_library(plugin_texteditor SHARED src/plugins/texteditor.cpp src/plugins/texteditor.json ${LCEDIT_UI})
   target_link_libraries(plugin_texteditor Qt5::Widgets KF5::TextEditor liblcedit)
+  set_target_properties(plugin_texteditor PROPERTIES PREFIX "lcedit_")
 endif()
 
-add_library(plugin_search SHARED src/plugins/search.cpp src/plugins/search.ui ${LCEDIT_UI})
+add_library(plugin_search SHARED src/plugins/search.cpp src/plugins/search.ui src/plugins/search.ui ${LCEDIT_UI})
 target_link_libraries(plugin_search Qt5::Widgets liblcedit)
+set_target_properties(plugin_search PROPERTIES PREFIX "lcedit_")
 
 if (UNIX)
   install(TARGETS liblcedit libc4group DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/lcedit")
   install(TARGETS lcedit DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-  install(TARGETS plugin_c4group plugin_search DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/qt/plugins/lcedit")
+  install(TARGETS plugin_c4group plugin_search DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/qt/plugins")
   if (KF5TextEditor_FOUND)
-    install(TARGETS plugin_texteditor DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/plugins/lcedit")
+	install(TARGETS plugin_texteditor DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/qt/plugins")
   endif()
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/lcedit.desktop" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications")
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/lcedit.png" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/64x64/apps")

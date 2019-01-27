@@ -72,11 +72,6 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 	return ExecPolicy::Continue;
 }
 
-int C4GroupPlugin::priority()
-{
-	return 1;
-}
-
 ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 {
 	QVariant role = item->data(2, Qt::UserRole);

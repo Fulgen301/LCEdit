@@ -1,0 +1,5 @@
+{
+	"name" : "FileSearch",
+	"description" : "A search tool for IDs, functions and plain text",
+	"priority" : 0
+}

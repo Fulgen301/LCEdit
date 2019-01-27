@@ -56,11 +56,6 @@ ExecPolicy FileSearchPlugin::createTree(const QDir &base, LCTreeWidgetItem *pare
 	return ExecPolicy::Continue;
 }
 
-int FileSearchPlugin::priority()
-{
-	return 0;
-}
-
 ExecPolicy FileSearchPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
 	Q_UNUSED(current);
