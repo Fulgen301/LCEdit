@@ -19,7 +19,7 @@ before_script:
 
 script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then source /opt/qt511/bin/qt511-env.sh; fi
-  - cmake . -DCMAKE_INSTALL_PREFIX="/usr"
+  - cmake . -DCMAKE_INSTALL_PREFIX="/usr" -DCMAKE_BUILD_TYPE="Debug"
   - make
 
 after_success:
