@@ -3,6 +3,7 @@ Type=Application
 Name=LCEdit
 Exec=lcedit
 Icon=lcedit
+Comment=A replacement for Clonk Rage's Editor.exe
 Categories=Development;
 StartupNotify=true
 
