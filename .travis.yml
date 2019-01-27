@@ -19,7 +19,7 @@ before_script:
 
 script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then source /opt/qt511/bin/qt511-env.sh; fi
-  - cmake . -DCMAKE_INSTALL_PREFIX="/usr" -DCMAKE_BUILD_TYPE="Debug"
+  - cmake . -DCMAKE_INSTALL_PREFIX="/usr" -DCMAKE_BUILD_TYPE="Debug" -DLCEDIT_PLUGIN_DEPLOY_PATH='/usr/plugins'
   - make
 
 after_success:
