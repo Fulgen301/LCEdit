@@ -14,20 +14,12 @@
 
 #include "lcedit.h"
 #include <QApplication>
-#include <QFont>
-#include <QFontDatabase>
 #include <QTranslator>
 #include <QLibraryInfo>
 
 int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
-	if (QFontDatabase().families().contains("Endeavour"))
-	{
-		QFont font = app.font();
-		font.setFamily("Endeavour");
-		app.setFont(font);
-	}
 
 	QTranslator qtTranslator;
 	qtTranslator.load("qt_" + QLocale::system().name(),QLibraryInfo::location(QLibraryInfo::TranslationsPath));
