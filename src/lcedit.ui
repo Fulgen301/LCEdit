@@ -53,6 +53,11 @@
         </item>
         <item>
          <widget class="QTextBrowser" name="txtDescription">
+          <property name="font">
+            <font>
+              <family>Monospace</family>
+            </font>
+          </property>
           <property name="lineWrapMode">
            <enum>QTextEdit::WidgetWidth</enum>
           </property>
