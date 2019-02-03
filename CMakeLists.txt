@@ -58,7 +58,7 @@ add_executable(lcedit ${LCEDIT_SRC})
 target_link_libraries(liblcedit Qt5::Core Qt5::Widgets)
 target_link_libraries(lcedit Qt5::Core Qt5::Widgets liblcedit)
 
-add_library(libc4group SHARED ${LIBC4GROUP_SRC})
+add_library(libc4group STATIC ${LIBC4GROUP_SRC})
 target_link_libraries(libc4group Qt5::Core ${ZLIB_LIBRARIES})
 
 add_library(plugin_c4group SHARED src/plugins/c4group.cpp src/plugins/c4group.json ${LCEDIT_UI})
@@ -76,7 +76,6 @@ target_link_libraries(plugin_search Qt5::Widgets liblcedit)
 set_target_properties(plugin_search PROPERTIES PREFIX "lcedit_")
 
 if (UNIX)
-  install(TARGETS liblcedit libc4group DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/lcedit")
   install(TARGETS lcedit DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
   install(TARGETS plugin_c4group plugin_search DESTINATION "${LCEDIT_PLUGIN_DEPLOY_PATH}")
   if (KF5TextEditor_FOUND)
