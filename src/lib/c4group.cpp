@@ -349,6 +349,7 @@ void C4Group::open(bool recursive)
 		temp.seek(0);
 		const QByteArray magic = temp.peek(2);
 		if (
+				magic.length() < 2 ||
 				(static_cast<uchar>(magic[0]) != gz_magic_new[0] && static_cast<uchar>(magic[0]) != gz_magic_old[0]) ||
 				(static_cast<uchar>(magic[1]) != gz_magic_new[1] && static_cast<uchar>(magic[1]) != gz_magic_old[1]))
 		{
