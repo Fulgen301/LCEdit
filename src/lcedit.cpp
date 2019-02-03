@@ -13,6 +13,7 @@
 //OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <QDebug>
+#include <QDesktopServices>
 #include <QDirIterator>
 #include <QSet>
 #include <QMessageBox>
@@ -78,6 +79,14 @@ LCEdit::LCEdit(const QString &path, QWidget *parent) :
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::treeItemChanged);
 	connect(ui->txtCmdLine, &QLineEdit::returnPressed, this, &LCEdit::startProcess);
 	connect(ui->btnStart, &QPushButton::clicked, this, &LCEdit::startProcess);
+	connect(ui->actLinks, &QAction::triggered, [this]()
+	{
+		const QString url = QStringLiteral("https://clonkspot.org/development");
+		if (!QDesktopServices::openUrl(QUrl(url)))
+		{
+			QMessageBox::information(this, tr("Weiterführende Links"), url);
+		}
+	});
 	loadPlugins();
 	createTree(m_path);
 }
