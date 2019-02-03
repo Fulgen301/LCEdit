@@ -15,6 +15,7 @@
 #include <QDebug>
 #include <QDirIterator>
 #include <QSet>
+#include <QMessageBox>
 #include <QMimeDatabase>
 #include <QMutex>
 #include <QRegularExpression>
@@ -114,6 +115,8 @@ void LCEdit::loadPlugins()
 	pluginsDir.cd("plugins");
 	paths << pluginsDir.absolutePath();
 
+	QStringList errors;
+
 	for (const QString &path : qAsConst(paths))
 	{
 		QDir dir(path);
@@ -124,10 +127,26 @@ void LCEdit::loadPlugins()
 			qDebug() << "Loading plugin " << loader.fileName();
 #endif
 			LOAD(loader.instance(), loader.metaData())
+			if (loader.errorString() != "Unknown error")
+			{
+				errors << loader.errorString();
+			}
 		}
 	}
 
 	std::sort(plugins.begin(), plugins.end(), [](LCPlugin a, LCPlugin b) {return a.metaData.value("priority").toInt() < b.metaData.value("priority").toInt(); });
+
+	if (errors.length() > 0)
+	{
+		QMessageBox messageBox;
+		messageBox.setIcon(QMessageBox::Critical);
+		messageBox.setText(tr("Einige Plugins konnten nicht geladen werden."));
+		messageBox.setDetailedText(errors.join('\n'));
+		messageBox.setStandardButtons(QMessageBox::Ok);
+		messageBox.setDefaultButton(QMessageBox::Ok);
+		messageBox.show();
+		messageBox.exec();
+	}
 }
 
 void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
