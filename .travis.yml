@@ -11,14 +11,14 @@ matrix:
           packages:
             - g++-7
       env:
-        - CC=gcc-7
-        - CXX=g++-7
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
 before_script:
   - bash scripts/travis_before_script.sh
 
 script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then source /opt/qt511/bin/qt511-env.sh; fi
+  - eval "${MATRIX_EVAL}"
   - cmake . -DCMAKE_INSTALL_PREFIX="/usr" -DCMAKE_BUILD_TYPE="Debug" -DLCEDIT_PLUGIN_DEPLOY_PATH='/usr/plugins'
   - make
 
