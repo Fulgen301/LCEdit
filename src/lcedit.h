@@ -39,15 +39,6 @@ enum class ExecPolicy {
 	AbortAll
 };
 
-template<class T> class ReturnValue {
-public:
-	ExecPolicy code;
-	T value;
-	ReturnValue(ExecPolicy c = ExecPolicy::Continue, T v = nullptr) : code(c), value(v) {}
-	ReturnValue(const ReturnValue &ret) : code(ret.code), value(ret.value) { }
-	ReturnValue &operator =(const ReturnValue &ret){ code = ret.code; value = ret.value; return *this; }
-};
-
 class LCPluginInterface
 {
 public:
@@ -55,8 +46,8 @@ public:
 	virtual void init(LCEdit *editor) = 0;
 	virtual ExecPolicy createTree(const QDir &base, LCTreeWidgetItem *parent) = 0;
 	virtual ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) = 0;
-	virtual ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) = 0;
-	virtual ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) = 0;
+	virtual std::optional<QIODevice *> getDevice(LCTreeWidgetItem *item) = 0;
+	virtual std::optional<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) = 0;
 };
 
 struct LCPlugin {

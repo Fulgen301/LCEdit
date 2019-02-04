@@ -118,15 +118,15 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 	return ExecPolicy::Continue;
 }
 
-ReturnValue<QIODevice *> TextEditorPlugin::getDevice(LCTreeWidgetItem *item)
+std::optional<QIODevice *> TextEditorPlugin::getDevice(LCTreeWidgetItem *item)
 {
 	Q_UNUSED(item);
-	return ReturnValue<QIODevice *>();
+	return std::nullopt;
 }
 
-ReturnValue<bool> TextEditorPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
+std::optional<bool> TextEditorPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
 	Q_UNUSED(item);
 	Q_UNUSED(device);
-	return ReturnValue<bool>(ExecPolicy::Continue, false);
+	return std::nullopt;
 }

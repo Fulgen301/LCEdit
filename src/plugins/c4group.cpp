@@ -72,24 +72,24 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 	return ExecPolicy::Continue;
 }
 
-ReturnValue<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
+std::optional<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 {
 	QVariant role = item->data(2, Qt::UserRole);
 	if (!role.canConvert<C4GroupEntry *>())
 	{
-		return ReturnValue<QIODevice *>();
+		return std::nullopt;
 	}
 
 	auto *file = qobject_cast<C4GroupFile *>(role.value<C4GroupEntry *>());
 	if (file == nullptr || Q_UNLIKELY(file->device == nullptr))
 	{
-		return ReturnValue<QIODevice *>();
+		return std::nullopt;
 	}
 
-	return ReturnValue<QIODevice *>(ExecPolicy::AbortAll, file->device);
+	return file->device;
 }
 
-ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
+std::optional<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
 	Q_UNUSED(device);
 
@@ -100,11 +100,11 @@ ReturnValue<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice
 		auto *f = qobject_cast<C4GroupFile *>(role.value<C4GroupEntry *>());
 		if (f != nullptr && f->device == device)
 		{
-			return ReturnValue<bool>(ExecPolicy::AbortAll, true);
+			return true;
 		}
 	}
 
-	return ReturnValue<bool>(ExecPolicy::Continue, false);
+	return std::nullopt;
 }
 
 void C4GroupPlugin::itemCollapsed(QTreeWidgetItem *item)

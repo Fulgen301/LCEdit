@@ -37,8 +37,8 @@ public:
 	void init(LCEdit *editor) override;
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem * parent) override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem * current, LCTreeWidgetItem * previous) override;
-	ReturnValue<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
-	ReturnValue<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
+	std::optional<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
+	std::optional<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
 
 private:
 	KTextEditor::Editor *m_texteditor = nullptr;

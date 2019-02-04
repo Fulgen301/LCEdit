@@ -19,6 +19,7 @@
 #define TRANSFER_CONTENTS(x, y) while (!(x).atEnd()) { (y).write((x).read(BLOCKSIZE)); }
 
 #include <QDir>
+#include <optional>
 #include "ui_lcedit.h"
 
 class LCEdit;
@@ -46,11 +47,11 @@ foreach(LCPlugin obj, plugins) \
 if (ret) return;
 
 #define CALL_PLUGINS_WITH_RET(t, x) \
-	ReturnValue<t> ret(ExecPolicy::Continue, static_cast<t>(NULL)); \
+	std::optional<t> ret; \
 	foreach (LCPlugin obj, plugins) \
 	{ \
 		ret = obj.plugin->x; \
-		if (ret.code != ExecPolicy::Continue) \
+		if (ret) \
 		{ \
 			break; \
 		} \

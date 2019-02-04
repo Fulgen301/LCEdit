@@ -63,17 +63,17 @@ ExecPolicy FileSearchPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 	return ExecPolicy::Continue;
 }
 
-ReturnValue<QIODevice *> FileSearchPlugin::getDevice(LCTreeWidgetItem *item)
+std::optional<QIODevice *> FileSearchPlugin::getDevice(LCTreeWidgetItem *item)
 {
 	Q_UNUSED(item);
-	return ReturnValue<QIODevice *>();
+	return std::nullopt;
 }
 
-ReturnValue<bool> FileSearchPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
+std::optional<bool> FileSearchPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
 	Q_UNUSED(item);
 	Q_UNUSED(device);
-	return ReturnValue<bool>(ExecPolicy::Continue, false);
+	return std::nullopt;
 }
 
 void FileSearchPlugin::setSearchFunc(Search::Func f)

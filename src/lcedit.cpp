@@ -259,10 +259,10 @@ QIODevice *LCEdit::getDevice(LCTreeWidgetItem *item)
 	qDebug() << "getDevice called for" << item << "(" << item->text(0) << ")";
 #endif
 	CALL_PLUGINS_WITH_RET(QIODevice *, getDevice(item))
-	if (ret.value != nullptr)
+	if (ret && *ret != nullptr)
 	{
 		item->mutex.lock();
-		return ret.value;
+		return *ret;
 	}
 	else if (QFileInfo(item->filePath()).isFile())
 	{
@@ -281,7 +281,7 @@ bool LCEdit::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 	qDebug() << "destroyDevice called for" << item << "(" << item->text(0) <<"," << device << ")";
 #endif
 	CALL_PLUGINS_WITH_RET(bool, destroyDevice(item, device))
-	if (ret.code == ExecPolicy::Continue && device != nullptr)
+	if (!ret && device != nullptr)
 	{
 		if (qobject_cast<QFile *>(device))
 		{
@@ -293,10 +293,10 @@ bool LCEdit::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 		else
 		{
 #ifndef Q_NO_DEBUG
-			qCritical() << "No destructor for device" << device;
+			qCritical() << "No destructor for device " << device;
 			abort();
 #else
-			qWarning() << "No destructor for device" << device;
+			qWarning() << "No destructor for device " << device;
 			item->mutex.unlock();
 			return false;
 #endif
@@ -304,8 +304,17 @@ bool LCEdit::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 	}
 	else
 	{
+		if (!*ret)
+		{
+#ifndef Q_NO_DEBUG
+			qCritical()
+#else
+			qWarning()
+#endif
+				<< "Destructor for device " << device << "failed";
+		}
 		item->mutex.unlock();
-		return ret.value;
+		return *ret;
 	}
 }
 
