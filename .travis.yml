@@ -29,3 +29,6 @@ branches:
   except:
     - # Do not build tags that we create when we upload to GitHub Releases
     - /^(?i:continuous)$/
+
+notifications:
+  irc: "irc.euirc.net#clonk-lcedit"
