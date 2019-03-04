@@ -31,8 +31,11 @@ branches:
     - /^(?i:continuous)$/
 
 notifications:
-  irc: "irc.euirc.net#clonk-lcedit"
-  template:
-    - "%{author} committed %{commit} to %{branch}: %{commit_subject}"
-    - "Build #%{build_number} %{result} (%{build_url})"
-    - "Change view: %{compare_url}"
+  irc:
+    channels:
+      - "irc.euirc.net#clonk-lcedit"
+    template:
+      - "%{author} committed %{commit} to %{branch}: %{commit_subject}"
+      - "Build #%{build_number} %{result} (%{build_url})"
+      - "Change view: %{compare_url}"
+    skip_join: true
