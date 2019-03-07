@@ -26,7 +26,6 @@ set(CMAKE_CXX_STANDARD 17)
 # Find the QtWidgets library
 find_package(Qt5Core CONFIG REQUIRED)
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(KF5TextEditor)
 
@@ -46,7 +45,7 @@ set(LCEDIT_SRC
   ${LCEDIT_UI}
 )
 
-set (LIBC4GROUP_SRC src/lib/c4group.cpp)
+add_subdirectory(src/lib/cc4group)
 
 # Create code from a list of Qt designer ui files.
 #qt5_wrap_ui(src/main.cpp src/include.h src/lcedit.ui)
@@ -58,11 +57,8 @@ add_executable(lcedit ${LCEDIT_SRC})
 target_link_libraries(liblcedit Qt5::Core Qt5::Widgets)
 target_link_libraries(lcedit Qt5::Core Qt5::Widgets liblcedit)
 
-add_library(libc4group STATIC ${LIBC4GROUP_SRC})
-target_link_libraries(libc4group Qt5::Core ${ZLIB_LIBRARIES})
-
 add_library(plugin_c4group SHARED src/plugins/c4group.cpp src/plugins/c4group.json ${LCEDIT_UI})
-target_link_libraries(plugin_c4group Qt5::Widgets libc4group liblcedit)
+target_link_libraries(plugin_c4group Qt5::Widgets cppc4group liblcedit)
 set_target_properties(plugin_c4group PROPERTIES PREFIX "lcedit_")
 
 if (KF5TextEditor_FOUND)

@@ -12,13 +12,20 @@
 //ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+#include <QBuffer>
 #include <QDir>
 #include <QHash>
 #include <QList>
 #include <QTimer>
 #include "../lcedit.h"
-#include "../lib/c4group.h"
+#include "../lib/cc4group/src/cppc4group.hpp"
 
+class LCC4GroupBuffer : public QBuffer
+{
+	Q_OBJECT
+public:
+	LCTreeWidgetItem *item;
+};
 
 class C4GroupPlugin : public QObject, public LCPluginInterface
 {
@@ -34,9 +41,13 @@ public:
 	std::optional<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
 
 private:
-	void createRealTree(LCTreeWidgetItem *parent, C4GroupDirectory *dir);
+	void createRealTree(LCTreeWidgetItem *parent, QSharedPointer<CppC4Group> group, const std::string &path = "");
+	CppC4Group::Data getDataForEntry(LCTreeWidgetItem *entry);
 	LCEdit *m_editor;
-	QHash<LCTreeWidgetItem *, C4Group *> rootItems;
+	enum Column { Path = 10, Group = 11 };
 private slots:
 	void itemCollapsed(QTreeWidgetItem *item);
 };
+
+Q_DECLARE_METATYPE(std::string)
+Q_DECLARE_METATYPE(QSharedPointer<CppC4Group>)
