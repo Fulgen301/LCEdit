@@ -45,7 +45,7 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	}
 
 	createRealTree(parent, group);
-	parent->setData(Column::Path, Qt::UserRole, QStringLiteral(""));
+	parent->setData(Column::Path, Qt::UserRole, QVariant::fromValue(std::string("")));
 	parent->setData(Column::Group, Qt::UserRole, QVariant::fromValue(group));
 	return ExecPolicy::AbortMain;
 }
@@ -87,7 +87,6 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 	auto group = var.value<QSharedPointer<CppC4Group>>(); \
 	\
 	var = (item)->data(Column::Path, Qt::UserRole); \
-	qDebug() << var; \
 	if (!var.canConvert<std::string>()) \
 	{ \
 		return ret; \
@@ -121,13 +120,9 @@ std::optional<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevi
 	if (buffer)
 	{
 		GET_VARS(item, std::nullopt)
-		qint64 len = buffer->data().size();
-		Q_ASSERT(len >= 0 && static_cast<quint64>(len) <= std::numeric_limits<size_t>::max());
-		size_t size = static_cast<size_t>(len);
-
-		char *data = reinterpret_cast<char *>(malloc(size));
-		std::memcpy(data, buffer->data().data(), size);
-		group->setEntryData(path, data, size, true);
+		qint64 size = buffer->data().size();
+		Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());
+		group->setEntryData(path, buffer->data().data(), static_cast<size_t>(size), CppC4Group::MemoryManagement::Copy);
 		delete buffer;
 		return true;
 	}
@@ -145,7 +140,15 @@ void C4GroupPlugin::itemCollapsed(QTreeWidgetItem *item)
 	GET_VARS(parent, /**/) // ugly hack, but works
 	if (path.length() <= 0)
 	{
+		qint32 count = parent->childCount();
 		parent->deleteChildren();
+		parent->setData(Column::Group, Qt::UserRole, QVariant());
+		parent->setData(Column::Path, Qt::UserRole, QVariant());
 		group->save(parent->filePath().toStdString(), true);
+
+		if (count >= 0)
+		{
+			parent->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
+		}
 	}
 }
