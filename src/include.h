@@ -37,8 +37,9 @@ foreach(LCPlugin obj, plugins) \
 	{ \
 		case ExecPolicy::Continue: \
 			continue; \
-		[[fallthrough]] case ExecPolicy::AbortMain: \
+		case ExecPolicy::AbortMain: \
 			ret = true; \
+			[[fallthrough]]; \
 		case ExecPolicy::AbortAll: \
 			return; \
 	} \
