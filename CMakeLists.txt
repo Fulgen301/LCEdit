@@ -45,7 +45,7 @@ set(LCEDIT_SRC
   ${LCEDIT_UI}
 )
 
-add_subdirectory(src/lib/cc4group)
+add_subdirectory(src/lib/cc4group EXCLUDE_FROM_ALL)
 
 # Create code from a list of Qt designer ui files.
 #qt5_wrap_ui(src/main.cpp src/include.h src/lcedit.ui)
