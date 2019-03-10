@@ -45,7 +45,10 @@ set(LCEDIT_SRC
   ${LCEDIT_UI}
 )
 
-add_subdirectory(src/lib/cc4group EXCLUDE_FROM_ALL)
+find_package(ZLIB)
+if (ZLIB_FOUND)
+  add_subdirectory(src/lib/cc4group EXCLUDE_FROM_ALL)
+endif()
 
 # Create code from a list of Qt designer ui files.
 #qt5_wrap_ui(src/main.cpp src/include.h src/lcedit.ui)
@@ -57,9 +60,11 @@ add_executable(lcedit ${LCEDIT_SRC})
 target_link_libraries(liblcedit Qt5::Core Qt5::Widgets)
 target_link_libraries(lcedit Qt5::Core Qt5::Widgets liblcedit)
 
-add_library(plugin_c4group SHARED src/plugins/c4group.cpp src/plugins/c4group.json ${LCEDIT_UI})
-target_link_libraries(plugin_c4group Qt5::Widgets cppc4group liblcedit)
-set_target_properties(plugin_c4group PROPERTIES PREFIX "lcedit_")
+if (ZLIB_FOUND)
+  add_library(plugin_c4group SHARED src/plugins/c4group.cpp src/plugins/c4group.json ${LCEDIT_UI})
+  target_link_libraries(plugin_c4group Qt5::Widgets cppc4group liblcedit)
+  set_target_properties(plugin_c4group PROPERTIES PREFIX "lcedit_")
+endif()
 
 if (KF5TextEditor_FOUND)
   add_library(plugin_texteditor SHARED src/plugins/texteditor.cpp src/plugins/texteditor.json ${LCEDIT_UI})
@@ -73,10 +78,15 @@ set_target_properties(plugin_search PROPERTIES PREFIX "lcedit_")
 
 if (UNIX)
   install(TARGETS lcedit DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-  install(TARGETS plugin_c4group plugin_search DESTINATION "${LCEDIT_PLUGIN_DEPLOY_PATH}")
+
+  if (ZLIB_FOUND)
+	install(TARGETS plugin_c4group plugin_search DESTINATION "${LCEDIT_PLUGIN_DEPLOY_PATH}")
+  endif()
+
   if (KF5TextEditor_FOUND)
     install(TARGETS plugin_texteditor DESTINATION "${LCEDIT_PLUGIN_DEPLOY_PATH}")
   endif()
+
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/lcedit.desktop" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications")
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/lcedit.png" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/64x64/apps")
   install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/res/lcedit.appdata.xml" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/metainfo/lcedit.appdata.xml")
