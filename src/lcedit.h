@@ -102,13 +102,13 @@ public:
 		return root;
 	}
 
-	[[nodiscard]]
-	QIODevice *getDevice(LCTreeWidgetItem *item);
+	[[nodiscard]] QIODevice *getDevice(LCTreeWidgetItem *item);
 	bool destroyDevice(LCTreeWidgetItem *item, QIODevice *device);
 	LCTreeWidgetItem *getItemByPath(const QString &path, LCTreeWidgetItem *parent = nullptr);
 
 private slots:
 	void setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+	void treeItemExpanded(QTreeWidgetItem *item);
 	void startProcess();
 
 public slots:

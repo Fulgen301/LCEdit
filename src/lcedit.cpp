@@ -77,6 +77,7 @@ LCEdit::LCEdit(const QString &path, QWidget *parent) :
 	ui->treeWidget->setColumnCount(1);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::setCommandLine);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::treeItemChanged);
+	connect(ui->treeWidget, &QTreeWidget::itemExpanded, this, &LCEdit::treeItemExpanded);
 	connect(ui->txtCmdLine, &QLineEdit::returnPressed, this, &LCEdit::startProcess);
 	connect(ui->btnStart, &QPushButton::clicked, this, &LCEdit::startProcess);
 	connect(ui->actLinks, &QAction::triggered, [this]()
@@ -207,13 +208,12 @@ void LCEdit::setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 {
 	auto *root = dynamic_cast<LCTreeWidgetItem *>(current);
-	if (root)
+	if (root != nullptr)
 	{
 		bool state = ui->lblName->isVisible();
 		ui->lblName->setText(root->text(0));
 		state ? ui->lblName->show() : ui->lblName->hide();
 
-		QFileInfo info(root->filePath());
 		if (root->childCount() == 0)
 		{
 			createTree(root->filePath(), root);
@@ -222,8 +222,10 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 
 	CALL_PLUGINS(treeItemChanged(root, dynamic_cast<LCTreeWidgetItem *>(previous)))
 
-	if (root == nullptr)
+	if (root == nullptr) // we only return here, because some plugin might want to do something nevertheless
+	{
 		return;
+	}
 
 	QFile file(root->filePath());
 	if (file.open(QIODevice::ReadOnly) && QMimeDatabase().mimeTypeForFileNameAndData(file.fileName(), file.peek(20)).inherits("text/plain"))
@@ -234,6 +236,15 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 	else
 	{
 		ui->txtDescription->setPlainText("");
+	}
+}
+
+void LCEdit::treeItemExpanded(QTreeWidgetItem *item)
+{
+	auto *root = dynamic_cast<LCTreeWidgetItem *>(item);
+	if (root != nullptr && root->childCount() == 0)
+	{
+		createTree(root->filePath(), root);
 	}
 }
 
