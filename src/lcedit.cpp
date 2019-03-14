@@ -122,8 +122,10 @@ void LCEdit::loadPlugins()
 			pluginsDir.cdUp();
 		}
 	#endif
-	pluginsDir.cd("plugins");
-	paths << pluginsDir.absolutePath();
+	if (pluginsDir.cd("plugins"))
+	{
+		paths << pluginsDir.absolutePath();
+	}
 
 	QStringList errors;
 
@@ -137,7 +139,7 @@ void LCEdit::loadPlugins()
 			qDebug() << "Loading plugin " << loader.fileName();
 #endif
 			LOAD(loader.instance(), loader.metaData())
-			if (loader.errorString() != "Unknown error")
+			if (!loader.isLoaded())
 			{
 				errors << loader.errorString();
 			}
