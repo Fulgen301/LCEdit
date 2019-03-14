@@ -41,6 +41,9 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	auto group = QSharedPointer<CppC4Group>(new CppC4Group);
 	if (!group->openExisting(parent->filePath().toStdString()))
 	{
+		qDebug() << QStringLiteral("Couldn't open group file (code %1): %2")
+						.arg(group->getErrorCode())
+						.arg(group->getErrorMessage().c_str());
 		return ExecPolicy::Continue;
 	}
 
