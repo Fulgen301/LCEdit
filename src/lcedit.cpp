@@ -229,11 +229,13 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 		return;
 	}
 
-	QFile file(root->filePath());
-	if (file.open(QIODevice::ReadOnly) && QMimeDatabase().mimeTypeForFileNameAndData(file.fileName(), file.peek(20)).inherits("text/plain"))
+	QIODevice *device = getDevice(root);
+	if (device != nullptr
+			&& device->open(QIODevice::ReadOnly)
+			&& QMimeDatabase().mimeTypeForFileNameAndData(root->text(0), device->peek(20)).inherits("text/plain"))
 	{
-		ui->txtDescription->setPlainText(file.readAll());
-		file.close();
+		ui->txtDescription->setPlainText(device->readAll());
+		device->close();
 	}
 	else
 	{
