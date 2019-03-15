@@ -57,7 +57,7 @@ ExecPolicy GraphicsViewerPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTr
 
 		auto pixmap = QPixmap::fromImageReader(&reader);
 		success = !pixmap.isNull();
-		pixmapItem->setPixmap(pixmap.scaled(view->width(), view->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+		pixmapItem->setPixmap(success ? pixmap.scaled(view->width(), view->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation) : pixmap);
 		scene.update();
 		view->setSceneRect(pixmapItem->boundingRect());
 		device->close();
