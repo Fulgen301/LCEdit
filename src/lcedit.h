@@ -79,7 +79,7 @@ class LCEdit : public QMainWindow
 	Q_OBJECT
 
 public:
-	explicit LCEdit(const QString &path = "", QWidget *parent = nullptr);
+	explicit LCEdit(QWidget *parent = nullptr);
 	~LCEdit();
 
 private:
@@ -90,9 +90,8 @@ private:
 
 public:
 	Ui::LCEdit *ui;
-	QDir m_path;
+	QSettings settings;
 	QList<LCPlugin> plugins;
-	QString filePath() { return m_path.path(); }
 	template<class T> LCTreeWidgetItem *createEntry(T *parent, QString fileName, QString filePath)
 	{
 		auto *root = new LCTreeWidgetItem(parent);
@@ -110,6 +109,7 @@ private slots:
 	void setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 	void treeItemExpanded(QTreeWidgetItem *item);
 	void startProcess();
+	void showPathDialog();
 
 public slots:
 	void treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);

@@ -54,9 +54,9 @@
         <item>
          <widget class="QTextBrowser" name="txtDescription">
           <property name="font">
-            <font>
-              <family>Monospace</family>
-            </font>
+           <font>
+            <family>Monospace</family>
+           </font>
           </property>
           <property name="lineWrapMode">
            <enum>QTextEdit::WidgetWidth</enum>
@@ -111,6 +111,7 @@
     <property name="title">
      <string>&amp;Datei</string>
     </property>
+    <addaction name="actPath"/>
    </widget>
    <widget class="QMenu" name="menuActions">
     <property name="title">
@@ -131,6 +132,11 @@
   <action name="actLinks">
    <property name="text">
     <string>Weiterführende Links</string>
+   </property>
+  </action>
+  <action name="actPath">
+   <property name="text">
+    <string>Pfad setzen...</string>
    </property>
   </action>
  </widget>

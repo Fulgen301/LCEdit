@@ -19,6 +19,9 @@
 
 int main(int argc, char *argv[])
 {
+	QApplication::setApplicationName(QStringLiteral("LCEdit"));
+	QApplication::setOrganizationName("LegacyClonk");
+	QApplication::setOrganizationDomain("");
 	QApplication app(argc, argv);
 
 	QTranslator qtTranslator;
@@ -29,7 +32,7 @@ int main(int argc, char *argv[])
 	myappTranslator.load("lcedit_" + QLocale::system().name());
 	app.installTranslator(&myappTranslator);
 	
-	LCEdit w(app.arguments().length() >= 2 ? app.arguments()[1] : QDir::currentPath());
+	LCEdit w;
 	w.show();
 
 	return app.exec();

@@ -15,6 +15,7 @@
 #include <QDebug>
 #include <QDesktopServices>
 #include <QDirIterator>
+#include <QFileDialog>
 #include <QSet>
 #include <QMessageBox>
 #include <QMimeDatabase>
@@ -60,19 +61,10 @@ LCTreeWidgetItem *LCTreeWidgetItem::getChildByName(const QString &name, Qt::Case
 	return nullptr;
 }
 
-LCEdit::LCEdit(const QString &path, QWidget *parent) :
+LCEdit::LCEdit(QWidget *parent) :
 	QMainWindow(parent),
-	ui(new Ui::LCEdit),
-	m_path(path)
-{/*
-	if (path == "")
-	{
-		QSettings clonkSettings(C4CFG_ConfigPath, C4CFG_Format);
-		qDebug() << C4CFG_ConfigPath << clonkSettings.value("General/Language").toString() << clonkSettings.value("General/LogPath").toString();
-		m_path = clonkSettings.value("General/LogPath").toString(); //FIXME
-		if (m_path.path() == "")
-			m_path = QDir::currentPath();
-	}*/
+	ui(new Ui::LCEdit)
+{
 	ui->setupUi(this);
 	ui->treeWidget->setColumnCount(1);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::setCommandLine);
@@ -88,8 +80,13 @@ LCEdit::LCEdit(const QString &path, QWidget *parent) :
 			QMessageBox::information(this, tr("Weiterführende Links"), url);
 		}
 	});
+	connect(ui->actPath, &QAction::triggered, this, &LCEdit::showPathDialog);
+	if (!QFileInfo(settings.value("Path").toString()).isDir())
+	{
+		showPathDialog();
+	}
 	loadPlugins();
-	createTree(m_path);
+	createTree(settings.value("Path").toString());
 }
 
 LCEdit::~LCEdit()
@@ -265,8 +262,21 @@ void LCEdit::startProcess()
 		SAFE_DELETE(proc);
 	}
 	proc = new QProcess;
-	proc->start(m_path.absoluteFilePath(cmdLine.takeFirst()), cmdLine);
+	proc->start(QDir(settings.value("Path").toString()).absoluteFilePath(cmdLine.takeFirst()), cmdLine);
 	proc->waitForStarted();
+}
+
+void LCEdit::showPathDialog()
+{
+	QString path = QFileDialog::getExistingDirectory(
+						  this,
+						  tr("Wählen Sie den Pfad Ihrer Clonk-Installation aus"),
+						  settings.value("Path").toString()
+						  );
+	if (!path.isEmpty())
+	{
+		settings.setValue("Path", path);
+	}
 }
 
 QIODevice *LCEdit::getDevice(LCTreeWidgetItem *item)
