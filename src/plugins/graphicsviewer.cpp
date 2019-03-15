@@ -32,7 +32,6 @@ void GraphicsViewerPlugin::init(LCEdit *editor)
 
 GraphicsViewerPlugin::~GraphicsViewerPlugin()
 {
-	delete view;
 }
 
 ExecPolicy GraphicsViewerPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
