@@ -76,6 +76,10 @@ add_library(plugin_search SHARED src/plugins/search.cpp src/plugins/search.ui sr
 target_link_libraries(plugin_search Qt5::Widgets liblcedit)
 set_target_properties(plugin_search PROPERTIES PREFIX "lcedit_")
 
+add_library(plugin_graphicsviewer SHARED src/plugins/graphicsviewer.cpp src/plugins/graphicsviewer.json ${LCEDIT_UI})
+target_link_libraries(plugin_graphicsviewer Qt5::Widgets liblcedit)
+set_target_properties(plugin_graphicsviewer PROPERTIES PREFIX "lcedit_")
+
 if (UNIX)
   install(TARGETS lcedit DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 
