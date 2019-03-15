@@ -21,6 +21,8 @@
 
 ExecPolicy TextEditorPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
+	Q_UNUSED(base);
+	Q_UNUSED(parent);
 	return ExecPolicy::Continue;
 }
 
@@ -28,7 +30,7 @@ void TextEditorPlugin::init(LCEdit *editor)
 {
 	m_editor = editor;
 	m_texteditor = KTextEditor::Editor::instance();
-	m_document = m_texteditor->createDocument(this);
+	m_document = m_texteditor->createDocument(nullptr);
 	m_textview = m_document->createView(m_editor);
 	m_editor->ui->layRight->addWidget(m_textview);
 	m_textview->hide();
@@ -36,13 +38,11 @@ void TextEditorPlugin::init(LCEdit *editor)
 
 TextEditorPlugin::~TextEditorPlugin()
 {
-//	SAFE_DELETE(m_textview)
-	SAFE_DELETE(m_document)
-//	SAFE_DELETE(m_texteditor)
 }
 
 ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
+	Q_UNUSED(previous);
 	SAFE_DELETE(watcher)
 	if (current)
 	{
