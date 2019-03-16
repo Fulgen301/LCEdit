@@ -98,7 +98,7 @@ bool C4GroupPlugin::readFromDevice(const void ** const data, size_t * const size
 	*size = static_cast<size_t>(buffer.size());
 	std::memcpy(buf, buffer.constData(), *size);
 	*data = buf;
-	return false;
+	return device->atEnd();
 }
 
 ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
