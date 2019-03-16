@@ -45,7 +45,7 @@ void FileSearchPlugin::init(LCEdit *editor)
 FileSearchPlugin::~FileSearchPlugin()
 {
 	cleanup();
-	SAFE_DELETE(searchThread)
+	delete searchThread;
 	delete ui;
 }
 
@@ -63,16 +63,9 @@ ExecPolicy FileSearchPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 	return ExecPolicy::Continue;
 }
 
-std::optional<QIODevice *> FileSearchPlugin::getDevice(LCTreeWidgetItem *item)
+std::optional<LCDeviceInformation> FileSearchPlugin::getDevice(LCTreeWidgetItem *item)
 {
 	Q_UNUSED(item);
-	return std::nullopt;
-}
-
-std::optional<bool> FileSearchPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
-{
-	Q_UNUSED(item);
-	Q_UNUSED(device);
 	return std::nullopt;
 }
 
@@ -81,9 +74,9 @@ void FileSearchPlugin::setSearchFunc(Search::Func f)
 	searchFunc = f;
 }
 
-bool FileSearchPlugin::waitForDevice(QIODevice *device)
+bool FileSearchPlugin::waitForDevice(const QIODevicePtr &device)
 {
-	if (device == nullptr)
+	if (device.isNull())
 	{
 		return false;
 	}
@@ -92,9 +85,9 @@ bool FileSearchPlugin::waitForDevice(QIODevice *device)
 	{
 		QMutex mutex;
 		mutex.lock();
-		connect(device, &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
+		connect(device.get(), &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
 		bool ret = condition.wait(&mutex, 2);
-		disconnect(device, &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
+		disconnect(device.get(), &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
 		mutex.unlock();
 		return ret;
 	}
@@ -106,7 +99,7 @@ void FileSearchPlugin::cleanup()
 	QListWidgetItem *item = nullptr;
 	while (item = ui->lstResults->takeItem(0))
 	{
-		SAFE_DELETE(item)
+		delete item;
 	}
 }
 
@@ -190,7 +183,7 @@ void FileSearchPlugin::search(const QString &text)
 			continue;
 		}
 		qDebug() << item->text(0);
-		QIODevice *device = m_editor->getDevice(item);
+		QIODevicePtr device = m_editor->getDevice(item);
 		if (!waitForDevice(device))
 		{
 			continue;
@@ -216,7 +209,6 @@ void FileSearchPlugin::search(const QString &text)
 			}
 			device->close();
 		}
-		m_editor->destroyDevice(item, device);
 	}
 }
 

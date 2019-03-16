@@ -33,11 +33,10 @@ if (UNIX)
   set(LCEDIT_PLUGIN_DEPLOY_PATH "${CMAKE_INSTALL_PREFIX}/lib/qt/plugins" CACHE PATH "LCEdit plugin deploy path")
 endif()
 
-set(LCEDIT_UI src/include.h src/lcedit.ui) # src/include.h is needed because it includes ui_lcedit.h, and AUTOUIC doesn't generate it if src/include.h isn't specified as source
+set(LCEDIT_UI src/lcedit.h src/lcedit.ui) # src/lcedit.h is needed because it includes ui_lcedit.h, and AUTOUIC doesn't generate it if src/lcedit.h isn't specified as source
 
 set(LIBLCEDIT_SRC
 	src/lcedit.cpp
-	src/lib/lcsettings.cpp
 	${LCEDIT_UI})
 
 set(LCEDIT_SRC

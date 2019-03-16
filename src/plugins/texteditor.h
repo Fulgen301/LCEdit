@@ -23,7 +23,6 @@
 #include <KTextEditor/Document>
 #include <KTextEditor/Editor>
 #include <KTextEditor/View>
-#include "../include.h"
 #include "../lcedit.h"
 
 class TextEditorPlugin : public QObject, public LCPluginInterface
@@ -37,8 +36,7 @@ public:
 	void init(LCEdit *editor) override;
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem * parent) override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem * current, LCTreeWidgetItem * previous) override;
-	std::optional<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
-	std::optional<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
+	std::optional<LCDeviceInformation> getDevice(LCTreeWidgetItem *item) override;
 
 private:
 	KTextEditor::Editor *m_texteditor = nullptr;

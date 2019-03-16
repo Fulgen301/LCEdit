@@ -53,8 +53,7 @@ public:
 	~FileSearchPlugin() override;
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem *parent) override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) override;
-	std::optional<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
-	std::optional<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
+	std::optional<LCDeviceInformation> getDevice(LCTreeWidgetItem *item) override;
 
 public:
 	Ui::LCDlgSearch *ui;
@@ -67,7 +66,7 @@ private:
 	Search::Func searchFunc;
 	QWaitCondition condition;
 	QThread *searchThread = nullptr;
-	bool waitForDevice(QIODevice *device);
+	bool waitForDevice(const QIODevicePtr &device);
 	void search(const QString &text);
 	void cleanup();
 	QList<LCTreeWidgetItem *> getEditorTreeEntries(QTreeWidgetItem *root = nullptr);

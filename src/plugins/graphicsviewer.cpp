@@ -50,10 +50,10 @@ ExecPolicy GraphicsViewerPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTr
 	}
 
 	bool success = false;
-	QIODevice *device = m_editor->getDevice(current);
-	if (device != nullptr && device->open(QIODevice::ReadOnly))
+	QIODevicePtr device = m_editor->getDevice(current);
+	if (!device.isNull() && device->open(QIODevice::ReadOnly))
 	{
-		QImageReader reader(device);
+		QImageReader reader(device.get());
 
 		auto pixmap = QPixmap::fromImageReader(&reader);
 		success = !pixmap.isNull();
@@ -62,20 +62,12 @@ ExecPolicy GraphicsViewerPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTr
 		view->setSceneRect(pixmapItem->boundingRect());
 		device->close();
 	}
-	m_editor->destroyDevice(current, device);
 	view->setVisible(success);
 	return ExecPolicy::Continue;
 }
 
-std::optional<QIODevice *> GraphicsViewerPlugin::getDevice(LCTreeWidgetItem *item)
+std::optional<LCDeviceInformation> GraphicsViewerPlugin::getDevice(LCTreeWidgetItem *item)
 {
 	Q_UNUSED(item);
-	return std::nullopt;
-}
-
-std::optional<bool> GraphicsViewerPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
-{
-	Q_UNUSED(item);
-	Q_UNUSED(device);
 	return std::nullopt;
 }

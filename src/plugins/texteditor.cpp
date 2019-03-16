@@ -43,73 +43,68 @@ TextEditorPlugin::~TextEditorPlugin()
 ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)
 {
 	Q_UNUSED(previous);
-	SAFE_DELETE(watcher)
+	delete watcher;
+	watcher = nullptr;
 	if (current)
 	{
-		QIODevice *device = m_editor->getDevice(current);
-		if (device != nullptr)
+		QIODevicePtr device = m_editor->getDevice(current);
+		if (!device.isNull() && device->open(QIODevice::ReadOnly))
 		{
-			if (device->open(QIODevice::ReadOnly))
+			QFileInfo info(current->filePath());
+			if (QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), device->peek(20)).inherits("text/plain"))
 			{
-				QFileInfo info(current->filePath());
-				if (QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), device->peek(20)).inherits("text/plain"))
+				QString filename;
+				if (device.objectCast<QFile>().isNull())
 				{
-					QString filename;
-					if (qobject_cast<QFile *>(device) == nullptr)
-					{
-						device->open(QIODevice::ReadOnly);
-						Q_ASSERT(device->isOpen());
-						file.open();
-						file.resize(0);
-						TRANSFER_CONTENTS(*device, file)
-						file.close();
-						device->close();
-						filename = file.fileName();
-					}
-					else
-					{
-						filename = qobject_cast<QFile *>(device)->fileName();
-					}
-					filename = QFileInfo(filename).absoluteFilePath();
-					watcher = new QFileSystemWatcher();
-					watcher->addPath(filename);
-					QObject::connect(watcher, &QFileSystemWatcher::fileChanged, [this, current, filename](const QString &path)
-					{
-						if (path == filename)
-						{
-							QIODevice *device = m_editor->getDevice(current);
-							if (device == nullptr)
-							{
-								qWarning() << "TextEditor: No device for file";
-								m_document->documentSaveAs();
-							}
-							if (qobject_cast<QFile *>(device) != nullptr)
-							{
-								return; // no need to transfer anything, contents got written to the device
-							}
-
-							QFile f(filename);
-							f.open(QIODevice::ReadOnly);
-							device->open(QIODevice::WriteOnly);
-							TRANSFER_CONTENTS(f, *device)
-							device->close();
-							f.close();
-							m_editor->destroyDevice(current, device);
-						}
-					});
-					m_document->setReadWrite(true);
-					m_document->openUrl(QUrl::fromLocalFile(filename));
-					m_document->setHighlightingMode(m_document->highlightingModes().contains(info.baseName()) ? info.baseName() : info.completeSuffix() == "c" ? "C4Script" : "Normal");
-					m_editor->ui->lblName->hide();
-					m_editor->ui->txtDescription->hide();
-					m_textview->show();
-					m_editor->destroyDevice(current, device);
-					return ExecPolicy::AbortAll;
+					device->open(QIODevice::ReadOnly);
+					Q_ASSERT(device->isOpen());
+					file.open();
+					file.resize(0);
+					TRANSFER_CONTENTS(*device, file)
+					file.close();
+					device->close();
+					filename = file.fileName();
 				}
-				device->close();
+				else
+				{
+					filename = device.objectCast<QFile>()->fileName();
+				}
+				filename = QFileInfo(filename).absoluteFilePath();
+				watcher = new QFileSystemWatcher();
+				watcher->addPath(filename);
+				QObject::connect(watcher, &QFileSystemWatcher::fileChanged, [this, current, filename](const QString &path)
+				{
+					if (path == filename)
+					{
+						QIODevicePtr device = m_editor->getDevice(current);
+						if (device.isNull())
+						{
+							qWarning() << "TextEditor: No device for file";
+							m_document->documentSaveAs();
+						}
+						if (device.objectCast<QFile>().isNull())
+						{
+							return; // no need to transfer anything, contents got written to the device
+						}
+
+						QFile f(filename);
+						f.open(QIODevice::ReadOnly);
+						device->open(QIODevice::WriteOnly);
+						TRANSFER_CONTENTS(f, *device)
+						device->close();
+						f.close();
+					}
+				});
+				m_document->setReadWrite(true);
+				m_document->openUrl(QUrl::fromLocalFile(filename));
+				m_document->setHighlightingMode(m_document->highlightingModes().contains(info.baseName()) ? info.baseName() : info.completeSuffix() == "c" ? "C4Script" : "Normal");
+				m_editor->ui->lblName->hide();
+				m_editor->ui->txtDescription->hide();
+				m_textview->show();
+				return ExecPolicy::AbortAll;
 			}
+			device->close();
 		}
-		m_editor->destroyDevice(current, device);
 	}
 
 	m_textview->hide();
@@ -118,15 +113,8 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 	return ExecPolicy::Continue;
 }
 
-std::optional<QIODevice *> TextEditorPlugin::getDevice(LCTreeWidgetItem *item)
+std::optional<LCDeviceInformation> TextEditorPlugin::getDevice(LCTreeWidgetItem *item)
 {
 	Q_UNUSED(item);
-	return std::nullopt;
-}
-
-std::optional<bool> TextEditorPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
-{
-	Q_UNUSED(item);
-	Q_UNUSED(device);
 	return std::nullopt;
 }

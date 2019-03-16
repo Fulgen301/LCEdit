@@ -1,4 +1,4 @@
-//Copyright (c) 2018, George Tokmaji
+//Copyright (c) 2018-2019, George Tokmaji
 
 //Permission to use, copy, modify, and/or distribute this software for any
 //purpose with or without fee is hereby granted, provided that the above
@@ -10,8 +10,9 @@
 //ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 //WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 //ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-//OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.#pragma once
+//OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+#pragma once
 #include <QByteArray>
 #include <QDebug>
 #include <QFile>
@@ -27,33 +28,16 @@
 #include <QTreeWidgetItem>
 #include <cstddef>
 #include <cstdint>
-#include "include.h"
+
+#include "plugin.h"
+#include "ui_lcedit.h"
+
+const int BLOCKSIZE = 1024;
+#define TRANSFER_CONTENTS(x, y) while (!(x).atEnd()) { (y).write((x).read(BLOCKSIZE)); }
 
 namespace Ui {
 class LCEdit;
 }
-
-enum class ExecPolicy {
-	Continue = 1,
-	AbortMain,
-	AbortAll
-};
-
-class LCPluginInterface
-{
-public:
-	virtual ~LCPluginInterface() {}
-	virtual void init(LCEdit *editor) = 0;
-	virtual ExecPolicy createTree(const QDir &base, LCTreeWidgetItem *parent) = 0;
-	virtual ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) = 0;
-	virtual std::optional<QIODevice *> getDevice(LCTreeWidgetItem *item) = 0;
-	virtual std::optional<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) = 0;
-};
-
-struct LCPlugin {
-	LCPluginInterface *plugin;
-	QJsonObject metaData;
-};
 
 class LCTreeWidgetItem : public QTreeWidgetItem
 {
@@ -82,12 +66,6 @@ public:
 	explicit LCEdit(QWidget *parent = nullptr);
 	~LCEdit();
 
-private:
-	QProcess *proc = nullptr;
-
-	void createTree(const QDir &base, LCTreeWidgetItem *parent = nullptr);
-	void loadPlugins();
-
 public:
 	Ui::LCEdit *ui;
 	QSettings settings;
@@ -101,9 +79,15 @@ public:
 		return root;
 	}
 
-	[[nodiscard]] QIODevice *getDevice(LCTreeWidgetItem *item);
-	bool destroyDevice(LCTreeWidgetItem *item, QIODevice *device);
+	[[nodiscard]] QIODevicePtr getDevice(LCTreeWidgetItem *item);
 	LCTreeWidgetItem *getItemByPath(const QString &path, LCTreeWidgetItem *parent = nullptr);
+
+private:
+	QProcess *proc = nullptr;
+	QHash<QIODevice *, LCTreeWidgetItem *> deviceHash;
+
+	void createTree(const QDir &base, LCTreeWidgetItem *parent = nullptr);
+	void loadPlugins();
 
 private slots:
 	void setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous);

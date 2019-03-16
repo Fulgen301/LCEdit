@@ -41,10 +41,10 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	bool success = false;
 	auto group = QSharedPointer<CppC4Group>::create();
 
-	QIODevice *device = m_editor->getDevice(parent);
-	if (device != nullptr && device->open(QIODevice::ReadOnly))
+	QIODevicePtr device = m_editor->getDevice(parent);
+	if (!device.isNull() && device->open(QIODevice::ReadOnly))
 	{
-		if (!(success = group->openWithReadCallback(&C4GroupPlugin::readFromDevice, reinterpret_cast<void *>(device))))
+		if (!(success = group->openWithReadCallback(&C4GroupPlugin::readFromDevice, reinterpret_cast<void *>(device.get()))))
 		{
 			qDebug() << QStringLiteral("Couldn't open group file (code %1): %2")
 							.arg(group->getErrorCode())
@@ -52,7 +52,6 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 		}
 		device->close();
 	}
-	m_editor->destroyDevice(parent, device);
 
 	if (!success)
 	{
@@ -109,24 +108,15 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 	return ExecPolicy::Continue;
 }
 
-#define GET_VARS(item, ret) \
-	QVariant var = (item)->data(Column::Group, Qt::UserRole); \
-	if (!var.canConvert<QSharedPointer<CppC4Group>>()) \
-	{ \
-		return ret; \
-	} \
-	auto group = var.value<QSharedPointer<CppC4Group>>(); \
-	\
-	var = (item)->data(Column::Path, Qt::UserRole); \
-	if (!var.canConvert<std::string>()) \
-	{ \
-		return ret; \
-	} \
-	const std::string path = var.value<std::string>();
-
-std::optional<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
+std::optional<LCDeviceInformation> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 {
-	GET_VARS(item, std::nullopt)
+	QSharedPointer<CppC4Group> group;
+	std::string path;
+	if (!getVars(item, group, path))
+	{
+		return std::nullopt;
+	}
+
 	std::optional<CppC4Group::Data> data = group->getEntryData(path);
 	if (!data)
 	{
@@ -139,26 +129,33 @@ std::optional<QIODevice *> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 	{
 		device->write(static_cast<const char *>(data->data), static_cast<qint64>(data->size));
 		device->close();
-		return device;
+		return LCDeviceInformation {
+			.device = device,
+			.deleter = std::bind(&C4GroupPlugin::destroyDevice, this, item, device)
+		};
 	}
-
 	return std::nullopt;
 }
 
-std::optional<bool> C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
+bool C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
-	LCC4GroupBuffer *buffer = qobject_cast<LCC4GroupBuffer *>(device);
-	if (buffer)
+	QSharedPointer<CppC4Group> group;
+	std::string path;
+	if (!getVars(item, group, path))
 	{
-		GET_VARS(item, std::nullopt)
-		qint64 size = buffer->data().size();
-		Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());
-		group->setEntryData(path, buffer->data().data(), static_cast<size_t>(size), CppC4Group::MemoryManagement::Copy);
-		delete buffer;
-		return true;
+		return false;
 	}
 
-	return std::nullopt;
+	LCC4GroupBuffer *buffer = qobject_cast<LCC4GroupBuffer *>(device);
+	if (!buffer)
+	{
+		return false;
+	}
+	qint64 size = buffer->data().size();
+	Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());
+	group->setEntryData(path, buffer->data().data(), static_cast<size_t>(size), CppC4Group::MemoryManagement::Copy);
+	delete buffer;
+	return true;
 }
 
 void C4GroupPlugin::itemCollapsed(QTreeWidgetItem *item)
@@ -168,7 +165,14 @@ void C4GroupPlugin::itemCollapsed(QTreeWidgetItem *item)
 	{
 		return;
 	}
-	GET_VARS(parent, /**/) // ugly hack, but works
+
+	QSharedPointer<CppC4Group> group;
+	std::string path;
+	if (!getVars(parent, group, path))
+	{
+		return;
+	}
+
 	if (path.length() <= 0)
 	{
 		qint32 count = parent->childCount();
@@ -182,4 +186,21 @@ void C4GroupPlugin::itemCollapsed(QTreeWidgetItem *item)
 			parent->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
 		}
 	}
+}
+
+bool C4GroupPlugin::getVars(LCTreeWidgetItem *item, QSharedPointer<CppC4Group> &group, std::string &path)
+{
+	QVariant var = item->data(Column::Group, Qt::UserRole);
+	if (!var.canConvert<QSharedPointer<CppC4Group>>())
+	{
+		return false;
+	}
+	group = var.value<QSharedPointer<CppC4Group>>();
+	var = item->data(Column::Path, Qt::UserRole);
+	if (!var.canConvert<std::string>())
+	{
+		return false;
+	}
+	path = var.value<std::string>();
+	return true;
 }

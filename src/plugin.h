@@ -1,4 +1,4 @@
-//Copyright (c) 2018, George Tokmaji
+//Copyright (c) 2019, George Tokmaji
 
 //Permission to use, copy, modify, and/or distribute this software for any
 //purpose with or without fee is hereby granted, provided that the above
@@ -13,22 +13,12 @@
 //OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #pragma once
-#define TO_CSTR(x) ((x).toStdString().c_str())
-#define SAFE_DELETE(x) if (x != nullptr) { delete x; x = nullptr; }
-#define BLOCKSIZE 1024
-#define TRANSFER_CONTENTS(x, y) while (!(x).atEnd()) { (y).write((x).read(BLOCKSIZE)); }
-
 #include <QDir>
+#include <QIODevice>
+#include <QJsonObject>
+#include <QSharedPointer>
+#include <functional>
 #include <optional>
-#include "ui_lcedit.h"
-
-class LCEdit;
-class LCTreeWidgetItem;
-class LCPluginInterface;
-enum class ExecPolicy;
-
-#define LCPlugin_Iid "org.legacyclonk.LegacyClonk.LCEdit.LCPluginInterface"
-Q_DECLARE_INTERFACE(LCPluginInterface, LCPlugin_Iid)
 
 #define CALL_PLUGINS(x) bool ret = false; \
 foreach(LCPlugin obj, plugins) \
@@ -46,13 +36,38 @@ foreach(LCPlugin obj, plugins) \
 } \
 if (ret) return;
 
-#define CALL_PLUGINS_WITH_RET(t, x) \
-	std::optional<t> ret; \
-	foreach (LCPlugin obj, plugins) \
-	{ \
-		ret = obj.plugin->x; \
-		if (ret) \
-		{ \
-			break; \
-		} \
-	}
+class LCEdit;
+class LCTreeWidgetItem;
+class LCPluginInterface;
+
+enum class ExecPolicy {
+	Continue = 1,
+	AbortMain,
+	AbortAll
+};
+
+struct LCDeviceInformation
+{
+	QIODevice *device;
+	std::function<bool()> deleter;
+};
+
+typedef QSharedPointer<QIODevice> QIODevicePtr;
+
+class LCPluginInterface
+{
+public:
+	virtual ~LCPluginInterface() {}
+	virtual void init(LCEdit *editor) = 0;
+	virtual ExecPolicy createTree(const QDir &base, LCTreeWidgetItem *parent) = 0;
+	virtual ExecPolicy treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous) = 0;
+	virtual std::optional<LCDeviceInformation> getDevice(LCTreeWidgetItem *item) = 0;
+};
+
+#define LCPlugin_Iid "org.legacyclonk.LegacyClonk.LCEdit.LCPluginInterface"
+Q_DECLARE_INTERFACE(LCPluginInterface, LCPlugin_Iid)
+
+struct LCPlugin {
+	LCPluginInterface *plugin;
+	QJsonObject metaData;
+};

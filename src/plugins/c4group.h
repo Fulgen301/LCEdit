@@ -37,11 +37,12 @@ public:
 	void init(LCEdit *editor) override;
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem * parent) override;
 	ExecPolicy treeItemChanged(LCTreeWidgetItem * current, LCTreeWidgetItem * previous) override;
-	std::optional<QIODevice *> getDevice(LCTreeWidgetItem *item) override;
-	std::optional<bool> destroyDevice(LCTreeWidgetItem *item, QIODevice *device) override;
+	std::optional<LCDeviceInformation> getDevice(LCTreeWidgetItem *item) override;
+	bool destroyDevice(LCTreeWidgetItem *item, QIODevice *device);
 
 private:
 	void createRealTree(LCTreeWidgetItem *parent, QSharedPointer<CppC4Group> group, const std::string &path = "");
+	bool getVars(LCTreeWidgetItem *item, QSharedPointer<CppC4Group> &group, std::string &path);
 	static bool readFromDevice(const void ** const data, size_t * const size, void * const arg);
 	CppC4Group::Data getDataForEntry(LCTreeWidgetItem *entry);
 	LCEdit *m_editor;
