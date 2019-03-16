@@ -164,24 +164,16 @@ void LCEdit::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	CALL_PLUGINS(createTree(base, parent))
 	if (!QFileInfo(base.path()).isDir())
 		return;
-	QDirIterator i(base);
-	while (i.hasNext())
+	for (const QString &entry : base.entryList(QDir::AllEntries | QDir::NoDotAndDotDot))
 	{
-		if (QSet<QString>({".", "..", ""}).contains(i.fileName()))
-		{
-			i.next();
-			continue;
-		}
-
 		if (parent != nullptr)
 		{
-			createEntry<LCTreeWidgetItem>(parent, i.fileName(), i.filePath());
+			createEntry<LCTreeWidgetItem>(parent, entry, base.absoluteFilePath(entry));
 		}
 		else
 		{
-			createEntry<QTreeWidget>(ui->treeWidget, i.fileName(), i.filePath());
+			createEntry<QTreeWidget>(ui->treeWidget, entry, base.absoluteFilePath(entry));
 		}
-		i.next();
 	}
 }
 
