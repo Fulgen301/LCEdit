@@ -30,7 +30,4 @@ public:
 
 private:
 	LCEdit *m_editor;
-
-private slots:
-	void actionPressed(QString *string);
 };
