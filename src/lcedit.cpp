@@ -192,7 +192,9 @@ void LCEdit::setCommandLine(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 		}
 	}
 	if (current)
-		cmdLine << current->text(0);
+	{
+		cmdLine << QDir(settings.value("Path").toString()).relativeFilePath(current->text(1)).replace('/', '\\');
+	}
 	ui->txtCmdLine->setText(cmdLine.join(" "));
 }
 
@@ -215,6 +217,8 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 
 	if (root == nullptr) // we only return here, because some plugin might want to do something nevertheless
 	{
+		ui->lblName->setText("");
+		ui->txtDescription->setPlainText("");
 		return;
 	}
 
@@ -259,14 +263,16 @@ void LCEdit::startProcess()
 
 void LCEdit::showPathDialog()
 {
-	QString path = QFileDialog::getExistingDirectory(
+	QString oldPath = settings.value("Path").toString();
+	QString newPath = QFileDialog::getExistingDirectory(
 						  this,
 						  tr("Wählen Sie den Pfad Ihrer Clonk-Installation aus"),
-						  settings.value("Path").toString()
+						  oldPath
 						  );
-	if (!path.isEmpty())
+	if (!newPath.isEmpty() && oldPath != newPath)
 	{
-		settings.setValue("Path", path);
+		settings.setValue("Path", newPath);
+		reload();
 	}
 }
 
@@ -311,6 +317,14 @@ QIODevicePtr LCEdit::getDevice(LCTreeWidgetItem *item)
 	{
 		return QIODevicePtr(nullptr);
 	}
+}
+
+void LCEdit::reload()
+{
+	ui->treeWidget->clear();
+//	createTree(settings.value("Path").toString());
+	treeItemChanged(nullptr, ui->treeWidget->currentItem());
+	createTree(settings.value("Path").toString());
 }
 
 LCTreeWidgetItem *LCEdit::getItemByPath(const QString &path, LCTreeWidgetItem *parent)

@@ -79,6 +79,10 @@ add_library(plugin_graphicsviewer SHARED src/plugins/graphicsviewer.cpp src/plug
 target_link_libraries(plugin_graphicsviewer Qt5::Widgets liblcedit)
 set_target_properties(plugin_graphicsviewer PROPERTIES PREFIX "lcedit_")
 
+add_library(plugin_workspaces SHARED src/plugins/workspaces.cpp src/plugins/workspaces.json ${LCEDIT_UI})
+target_link_libraries(plugin_workspaces Qt5::Widgets liblcedit)
+set_target_properties(plugin_workspaces PROPERTIES PREFIX "lcedit_")
+
 if (UNIX)
   install(TARGETS lcedit DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 

@@ -97,4 +97,5 @@ private slots:
 
 public slots:
 	void treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+	void reload();
 };
