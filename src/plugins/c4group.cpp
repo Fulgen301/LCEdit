@@ -38,12 +38,24 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 		return ExecPolicy::Continue;
 	}
 
-	auto group = QSharedPointer<CppC4Group>(new CppC4Group);
-	if (!group->openExisting(parent->filePath().toStdString()))
+	bool success = false;
+	auto group = QSharedPointer<CppC4Group>::create();
+
+	QIODevice *device = m_editor->getDevice(parent);
+	if (device != nullptr && device->open(QIODevice::ReadOnly))
 	{
-		qDebug() << QStringLiteral("Couldn't open group file (code %1): %2")
-						.arg(group->getErrorCode())
-						.arg(group->getErrorMessage().c_str());
+		if (!(success = group->openWithReadCallback(&C4GroupPlugin::readFromDevice, reinterpret_cast<void *>(device))))
+		{
+			qDebug() << QStringLiteral("Couldn't open group file (code %1): %2")
+							.arg(group->getErrorCode())
+							.arg(group->getErrorMessage().c_str());
+		}
+		device->close();
+	}
+	m_editor->destroyDevice(parent, device);
+
+	if (!success)
+	{
 		return ExecPolicy::Continue;
 	}
 
@@ -72,6 +84,22 @@ void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, QSharedPointer<CppC
 			}
 		}
 	}
+}
+
+bool C4GroupPlugin::readFromDevice(const void ** const data, size_t * const size, void * const arg)
+{
+	QIODevice *device = reinterpret_cast<QIODevice *>(arg);
+	QByteArray buffer = device->read(BLOCKSIZE);
+
+	void *buf = std::malloc(BLOCKSIZE);
+	if (buf == nullptr)
+	{
+		return true;
+	}
+	*size = static_cast<size_t>(buffer.size());
+	std::memcpy(buf, buffer.constData(), *size);
+	*data = buf;
+	return false;
 }
 
 ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidgetItem *previous)

@@ -42,6 +42,7 @@ public:
 
 private:
 	void createRealTree(LCTreeWidgetItem *parent, QSharedPointer<CppC4Group> group, const std::string &path = "");
+	static bool readFromDevice(const void ** const data, size_t * const size, void * const arg);
 	CppC4Group::Data getDataForEntry(LCTreeWidgetItem *entry);
 	LCEdit *m_editor;
 	enum Column { Path = 10, Group = 11 };
