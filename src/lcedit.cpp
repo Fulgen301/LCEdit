@@ -81,12 +81,17 @@ LCEdit::LCEdit(QWidget *parent) :
 		}
 	});
 	connect(ui->actPath, &QAction::triggered, this, &LCEdit::showPathDialog);
+
+	loadPlugins(); // Plugins might want to set the path.
+
 	if (!QFileInfo(settings.value("Path").toString()).isDir())
 	{
 		showPathDialog();
 	}
-	loadPlugins();
-	createTree(settings.value("Path").toString());
+	else
+	{
+		createTree(settings.value("Path").toString());
+	}
 }
 
 LCEdit::~LCEdit()
@@ -322,7 +327,6 @@ QIODevicePtr LCEdit::getDevice(LCTreeWidgetItem *item)
 void LCEdit::reload()
 {
 	ui->treeWidget->clear();
-//	createTree(settings.value("Path").toString());
 	treeItemChanged(nullptr, ui->treeWidget->currentItem());
 	createTree(settings.value("Path").toString());
 }
