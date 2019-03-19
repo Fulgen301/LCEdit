@@ -54,7 +54,7 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 			if (QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), device->peek(20)).inherits("text/plain"))
 			{
 				QString filename;
-				if (device.objectCast<QFile>().isNull())
+				if (device.objectCast<QFileDevice>().isNull())
 				{
 					device->open(QIODevice::ReadOnly);
 					Q_ASSERT(device->isOpen());
@@ -67,7 +67,7 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 				}
 				else
 				{
-					filename = device.objectCast<QFile>()->fileName();
+					filename = device.objectCast<QFileDevice>()->fileName();
 				}
 				filename = QFileInfo(filename).absoluteFilePath();
 				watcher = new QFileSystemWatcher();
@@ -82,7 +82,7 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 							qWarning() << "TextEditor: No device for file";
 							m_document->documentSaveAs();
 						}
-						if (device.objectCast<QFile>().isNull())
+						if (!device.objectCast<QFileDevice>().isNull())
 						{
 							return; // no need to transfer anything, contents got written to the device
 						}
