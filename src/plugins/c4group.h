@@ -20,13 +20,6 @@
 #include "../lcedit.h"
 #include "../lib/cc4group/src/cppc4group.hpp"
 
-class LCC4GroupBuffer : public QBuffer
-{
-	Q_OBJECT
-public:
-	LCTreeWidgetItem *item;
-};
-
 class C4GroupPlugin : public QObject, public LCPluginInterface
 {
 	Q_OBJECT

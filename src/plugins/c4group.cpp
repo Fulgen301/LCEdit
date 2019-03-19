@@ -123,8 +123,7 @@ std::optional<LCDeviceInformation> C4GroupPlugin::getDevice(LCTreeWidgetItem* it
 		return std::nullopt;
 	}
 
-	auto *device = new LCC4GroupBuffer; // TODO: use different subclasses depending on tmp memory setting
-	device->item = item;
+	auto *device = new QBuffer; // TODO: use different subclasses depending on tmp memory setting
 	if (device->open(QIODevice::WriteOnly))
 	{
 		device->write(static_cast<const char *>(data->data), static_cast<qint64>(data->size));
@@ -146,14 +145,21 @@ bool C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 		return false;
 	}
 
-	LCC4GroupBuffer *buffer = qobject_cast<LCC4GroupBuffer *>(device);
-	if (!buffer)
+	auto *buffer = qobject_cast<QBuffer *>(device);
+
+	if (buffer == nullptr)
 	{
 		return false;
 	}
-	qint64 size = buffer->data().size();
-	Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());
-	group->setEntryData(path, buffer->data().data(), static_cast<size_t>(size), CppC4Group::MemoryManagement::Copy);
+
+	std::optional<CppC4Group::Data> data = group->getEntryData(path);
+
+	if (!data || buffer->data().compare(static_cast<const char *>(data->data)) != 0)
+	{
+		qint64 size = buffer->data().size();
+		Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());
+		group->setEntryData(path, buffer->data().data(), static_cast<size_t>(size), CppC4Group::MemoryManagement::Copy);
+	}
 	delete buffer;
 	return true;
 }
