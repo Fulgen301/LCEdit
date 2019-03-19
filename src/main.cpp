@@ -20,7 +20,7 @@
 int main(int argc, char *argv[])
 {
 	QApplication::setApplicationName(QStringLiteral("LCEdit"));
-	QApplication::setOrganizationName("LegacyClonk");
+	QApplication::setOrganizationName(QStringLiteral("LCEdit"));
 	QApplication::setOrganizationDomain("");
 	QApplication app(argc, argv);
 

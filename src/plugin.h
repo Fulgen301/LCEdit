@@ -64,7 +64,7 @@ public:
 	virtual std::optional<LCDeviceInformation> getDevice(LCTreeWidgetItem *item) = 0;
 };
 
-#define LCPlugin_Iid "org.legacyclonk.LegacyClonk.LCEdit.LCPluginInterface"
+#define LCPlugin_Iid "com.github.LCEdit.LCPluginInterface"
 Q_DECLARE_INTERFACE(LCPluginInterface, LCPlugin_Iid)
 
 struct LCPlugin {
