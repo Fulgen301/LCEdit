@@ -154,7 +154,7 @@ bool C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 
 	std::optional<CppC4Group::Data> data = group->getEntryData(path);
 
-	if (!data || buffer->data().compare(static_cast<const char *>(data->data)) != 0)
+	if (!data || qstrcmp(buffer->data().constData(), reinterpret_cast<const char *>(data->data)) != 0)
 	{
 		qint64 size = buffer->data().size();
 		Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());
