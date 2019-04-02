@@ -41,9 +41,6 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	bool success = false;
 	auto group = QSharedPointer<CppC4Group>::create();
 
-#ifdef Q_OS_WIN
-	group->setTmpMemoryStrategy(CppC4Group::TmpMemoryStrategy::Memory);
-#endif
 	QIODevicePtr device = m_editor->getDevice(parent);
 	if (!device.isNull() && device->open(QIODevice::ReadOnly))
 	{
