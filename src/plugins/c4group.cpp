@@ -41,8 +41,7 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	bool success = false;
 	auto group = QSharedPointer<CppC4Group>::create();
 
-	QIODevicePtr device = m_editor->getDevice(parent);
-	if (!device.isNull() && device->open(QIODevice::ReadOnly))
+	if (QIODevicePtr device = m_editor->getDevice(parent); !device.isNull() && device->open(QIODevice::ReadOnly))
 	{
 		if (!(success = group->openWithReadCallback(&C4GroupPlugin::readFromDevice, reinterpret_cast<void *>(device.get()))))
 		{
@@ -66,8 +65,7 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 
 void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, QSharedPointer<CppC4Group> group, const std::string &path)
 {
-	std::optional<std::vector<CppC4Group::EntryInfo>> infos = group->getEntryInfos(path);
-	if (infos)
+	if (auto infos = group->getEntryInfos(path); infos)
 	{
 		for (auto &info : *infos)
 		{
@@ -123,15 +121,11 @@ std::optional<LCDeviceInformation> C4GroupPlugin::getDevice(LCTreeWidgetItem* it
 		return std::nullopt;
 	}
 
-	auto *device = new QBuffer; // TODO: use different subclasses depending on tmp memory setting
-	if (device->open(QIODevice::WriteOnly))
+	if (auto device = new QBuffer; device->open(QIODevice::WriteOnly)) // TODO: use different subclasses depending on tmp memory setting
 	{
 		device->write(static_cast<const char *>(data->data), static_cast<qint64>(data->size));
 		device->close();
-		return LCDeviceInformation {
-			.device = device,
-			.deleter = std::bind(&C4GroupPlugin::destroyDevice, this, item, device)
-		};
+		return LCDeviceInformation{device, std::bind(&C4GroupPlugin::destroyDevice, this, item, device)};
 	}
 	return std::nullopt;
 }
@@ -152,9 +146,8 @@ bool C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 		return false;
 	}
 
-	std::optional<CppC4Group::Data> data = group->getEntryData(path);
-
-	if (!data || buffer->data() != QByteArray::fromRawData(reinterpret_cast<const char *>(data->data), static_cast<int>(data->size)))
+	if (auto data = group->getEntryData(path);
+			!data || buffer->data() != QByteArray::fromRawData(reinterpret_cast<const char *>(data->data), static_cast<int>(data->size)))
 	{
 		qint64 size = buffer->data().size();
 		Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());

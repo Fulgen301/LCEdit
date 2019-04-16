@@ -50,8 +50,7 @@ ExecPolicy GraphicsViewerPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTr
 	}
 
 	bool success = false;
-	QIODevicePtr device = m_editor->getDevice(current);
-	if (!device.isNull() && device->open(QIODevice::ReadOnly))
+	if (QIODevicePtr device = m_editor->getDevice(current); !device.isNull() && device->open(QIODevice::ReadOnly))
 	{
 		QImageReader reader(device.get());
 

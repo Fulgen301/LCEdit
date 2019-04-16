@@ -47,8 +47,8 @@ ExecPolicy TextEditorPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWi
 	watcher = nullptr;
 	if (current)
 	{
-		QIODevicePtr device = m_editor->getDevice(current);
-		if (!device.isNull() && device->open(QIODevice::ReadOnly))
+
+		if (QIODevicePtr device = m_editor->getDevice(current); !device.isNull() && device->open(QIODevice::ReadOnly))
 		{
 			QFileInfo info(current->filePath());
 			if (QMimeDatabase().mimeTypeForFileNameAndData(info.fileName(), device->peek(20)).inherits("text/plain"))

@@ -35,10 +35,7 @@
 	if (plugin != nullptr) \
 	{ \
 		plugin->init(this); \
-		plugins.append(LCPlugin { \
-			.plugin = plugin, \
-			.metaData = metaData \
-		}); \
+		plugins.append(LCPlugin { plugin, metaData}); \
 		pluginNames.append(metaData.value("name").toString()); \
 		qDebug() << "Loaded plugin " << metaData.value("name").toString(); \
 	} \
@@ -227,8 +224,8 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 		return;
 	}
 
-	QIODevicePtr device = getDevice(root);
-	if (!device.isNull()
+	if (QIODevicePtr device = getDevice(root);
+			!device.isNull()
 			&& device->open(QIODevice::ReadOnly)
 			&& QMimeDatabase().mimeTypeForFileNameAndData(root->text(0), device->peek(20)).inherits("text/plain"))
 	{
