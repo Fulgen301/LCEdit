@@ -85,9 +85,9 @@ bool FileSearchPlugin::waitForDevice(const QIODevicePtr &device)
 	{
 		QMutex mutex;
 		mutex.lock();
-		connect(device.get(), &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
+		connect(device.data(), &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
 		bool ret = condition.wait(&mutex, 2);
-		disconnect(device.get(), &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
+		disconnect(device.data(), &QIODevice::aboutToClose, this, &FileSearchPlugin::deviceAboutToClose);
 		mutex.unlock();
 		return ret;
 	}
