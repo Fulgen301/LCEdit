@@ -17,6 +17,7 @@
 #include <QtDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QMessageBox>
 #include <QSharedPointer>
 #include <QString>
 #include <QSet>
@@ -27,19 +28,27 @@
 void C4GroupPlugin::init(LCEdit *editor)
 {
 	m_editor = editor;
-	connect(m_editor->ui->treeWidget, &QTreeWidget::itemCollapsed, this, &C4GroupPlugin::itemCollapsed);
+
+	auto *menu = new QMenu("C4Group");
+	actSave = menu->addAction(tr("Speichern"), this, &C4GroupPlugin::saveGroup);
+	actSave->setDisabled(true);
+
+	actClose = menu->addAction(tr("Schließen"), this, [this]() { closeGroup(dynamic_cast<LCTreeWidgetItem *>(m_editor->ui->treeWidget->currentItem()), true); });
+	actClose->setDisabled(true);
+
+	m_editor->ui->menuActions->addMenu(menu);
 }
 
 ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 {
 	Q_UNUSED(base);
-	if (parent == nullptr || QFileInfo(parent->filePath()).isDir() || parent->data(Column::Group, Qt::UserRole).canConvert<QSharedPointer<CppC4Group>>())
+	if (parent == nullptr || QFileInfo(parent->filePath()).isDir() || parent->data(Column::Group, Qt::UserRole).canConvert<CppC4GroupPtr>())
 	{
 		return ExecPolicy::Continue;
 	}
 
 	bool success = false;
-	auto group = QSharedPointer<CppC4Group>::create();
+	auto group = CppC4GroupPtr::create(false);
 
 	if (QIODevicePtr device = m_editor->getDevice(parent); !device.isNull() && device->open(QIODevice::ReadOnly))
 	{
@@ -63,7 +72,7 @@ ExecPolicy C4GroupPlugin::createTree(const QDir &base, LCTreeWidgetItem *parent)
 	return ExecPolicy::AbortMain;
 }
 
-void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, QSharedPointer<CppC4Group> group, const std::string &path)
+void C4GroupPlugin::createRealTree(LCTreeWidgetItem *parent, CppC4GroupPtr group, const std::string &path)
 {
 	if (auto infos = group->getEntryInfos(path); infos)
 	{
@@ -103,14 +112,26 @@ ExecPolicy C4GroupPlugin::treeItemChanged(LCTreeWidgetItem *current, LCTreeWidge
 {
 	Q_UNUSED(current);
 	Q_UNUSED(previous);
+
+	if (current == nullptr)
+	{
+		return ExecPolicy::Continue;
+	}
+
+	CppC4GroupPtr group;
+
+	bool enabled = getVars(current, &group);
+	actSave->setEnabled(enabled);
+	actClose->setEnabled(enabled);
+
 	return ExecPolicy::Continue;
 }
 
 std::optional<LCDeviceInformation> C4GroupPlugin::getDevice(LCTreeWidgetItem* item)
 {
-	QSharedPointer<CppC4Group> group;
+	CppC4GroupPtr group;
 	std::string path;
-	if (!getVars(item, group, path))
+	if (!getVars(item, &group, &path))
 	{
 		return std::nullopt;
 	}
@@ -132,9 +153,9 @@ std::optional<LCDeviceInformation> C4GroupPlugin::getDevice(LCTreeWidgetItem* it
 
 bool C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 {
-	QSharedPointer<CppC4Group> group;
+	CppC4GroupPtr group;
 	std::string path;
-	if (!getVars(item, group, path))
+	if (!getVars(item, &group, &path))
 	{
 		return false;
 	}
@@ -147,59 +168,114 @@ bool C4GroupPlugin::destroyDevice(LCTreeWidgetItem *item, QIODevice *device)
 	}
 
 	if (auto data = group->getEntryData(path);
-			!data || buffer->data() != QByteArray::fromRawData(reinterpret_cast<const char *>(data->data), static_cast<int>(data->size)))
+			!data || buffer->data() != QByteArray::fromRawData(static_cast<const char *>(data->data), static_cast<int>(data->size)))
 	{
 		qint64 size = buffer->data().size();
 		Q_ASSERT(size >= 0 && static_cast<quint64>(size) <= std::numeric_limits<size_t>::max());
-		group->setEntryData(path, buffer->data().data(), static_cast<size_t>(size), CppC4Group::MemoryManagement::Copy);
+
+		group->setEntryData(path, buffer->data().constData(), static_cast<size_t>(size), CppC4Group::MemoryManagement::Copy);
+		delete buffer;
 	}
-	delete buffer;
 	return true;
 }
 
-void C4GroupPlugin::itemCollapsed(QTreeWidgetItem *item)
+bool C4GroupPlugin::getVars(LCTreeWidgetItem *item, CppC4GroupPtr *group, std::string *path)
 {
-	auto *parent = dynamic_cast<LCTreeWidgetItem *>(item);
-	if (parent == nullptr)
+	if (group)
 	{
-		return;
-	}
-
-	QSharedPointer<CppC4Group> group;
-	std::string path;
-	if (!getVars(parent, group, path))
-	{
-		return;
-	}
-
-	if (path.length() <= 0)
-	{
-		qint32 count = parent->childCount();
-		parent->deleteChildren();
-		parent->setData(Column::Group, Qt::UserRole, QVariant());
-		parent->setData(Column::Path, Qt::UserRole, QVariant());
-		group->save(parent->filePath().toStdString(), true);
-
-		if (count >= 0)
+		QVariant var = item->data(Column::Group, Qt::UserRole);
+		if (!var.canConvert<CppC4GroupPtr>())
 		{
-			parent->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
+			return false;
+		}
+
+		*group = var.value<CppC4GroupPtr>();
+	}
+
+	if (path)
+	{
+		QVariant var = item->data(Column::Path, Qt::UserRole);
+		if (!var.canConvert<std::string>())
+		{
+			return false;
+		}
+
+		*path = var.value<std::string>();
+	}
+
+	return true;
+}
+
+void C4GroupPlugin::closeGroup(LCTreeWidgetItem *item, bool confirmSave)
+{
+	CppC4GroupPtr group;
+	std::string path;
+	if (item = getGroupRootItem(item, &group, &path); !item)
+	{
+		return;
+	}
+
+	if (confirmSave)
+	{
+		switch (QMessageBox::warning(
+					nullptr,
+					tr("Schließen bestätigen"),
+					tr("Die Gruppe wurde noch nicht gespeichert.\nSpeichern?"),
+					QMessageBox::Save | QMessageBox::Discard | QMessageBox::Abort,
+					QMessageBox::Abort))
+		{
+		case QMessageBox::Save:
+			group->save("", true);
+			Q_FALLTHROUGH();
+
+		case QMessageBox::Discard:
+			break;
+
+		default:
+			return;
 		}
 	}
+
+	qint32 count = item->childCount();
+	item->deleteChildren();
+	item->setData(Column::Group, Qt::UserRole, QVariant());
+	item->setData(Column::Path, Qt::UserRole, QVariant());
+
+	if (count >= 0)
+	{
+		item->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
+	}
 }
 
-bool C4GroupPlugin::getVars(LCTreeWidgetItem *item, QSharedPointer<CppC4Group> &group, std::string &path)
+LCTreeWidgetItem *C4GroupPlugin::getGroupRootItem(LCTreeWidgetItem *item, CppC4GroupPtr *group, std::string *path)
 {
-	QVariant var = item->data(Column::Group, Qt::UserRole);
-	if (!var.canConvert<QSharedPointer<CppC4Group>>())
+	if (!getVars(item, group, path))
 	{
-		return false;
+		return nullptr;
 	}
-	group = var.value<QSharedPointer<CppC4Group>>();
-	var = item->data(Column::Path, Qt::UserRole);
-	if (!var.canConvert<std::string>())
+
+	while (path->length() > 0)
 	{
-		return false;
+		item = dynamic_cast<LCTreeWidgetItem *>(item->parent());
+		Q_ASSERT(item);
+
+		if (!getVars(item, nullptr, path))
+		{
+			return nullptr;
+		}
 	}
-	path = var.value<std::string>();
-	return true;
+
+	return item;
+}
+
+void C4GroupPlugin::saveGroup()
+{
+	CppC4GroupPtr group;
+	std::string path;
+	if (!getVars(dynamic_cast<LCTreeWidgetItem *>(m_editor->ui->treeWidget->currentItem()), &group, &path))
+	{
+		return;
+	}
+
+	group->save(path, true);
 }

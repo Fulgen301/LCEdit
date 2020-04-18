@@ -26,6 +26,8 @@ class C4GroupPlugin : public QObject, public LCPluginInterface
 	Q_PLUGIN_METADATA(IID LCPlugin_Iid FILE "c4group.json")
 	Q_INTERFACES(LCPluginInterface)
 
+	using CppC4GroupPtr = QSharedPointer<CppC4Group>;
+
 public:
 	void init(LCEdit *editor) override;
 	ExecPolicy createTree(const QDir & base, LCTreeWidgetItem * parent) override;
@@ -34,14 +36,23 @@ public:
 	bool destroyDevice(LCTreeWidgetItem *item, QIODevice *device);
 
 private:
-	void createRealTree(LCTreeWidgetItem *parent, QSharedPointer<CppC4Group> group, const std::string &path = "");
-	bool getVars(LCTreeWidgetItem *item, QSharedPointer<CppC4Group> &group, std::string &path);
+	void createRealTree(LCTreeWidgetItem *parent, CppC4GroupPtr group, const std::string &path = "");
+	bool getVars(LCTreeWidgetItem *item, CppC4GroupPtr *group = nullptr, std::string *path = nullptr);
 	static bool readFromDevice(const void ** const data, size_t * const size, void * const arg);
 	CppC4Group::Data getDataForEntry(LCTreeWidgetItem *entry);
+
+	void closeGroup(LCTreeWidgetItem *item, bool confirmSave = true);
+
+	LCTreeWidgetItem *getGroupRootItem(LCTreeWidgetItem *item, CppC4GroupPtr *group, std::string *path);
+
 	LCEdit *m_editor;
+	QAction *actSave;
+	QAction *actClose;
+
 	enum Column { Path = 10, Group = 11 };
+
 private slots:
-	void itemCollapsed(QTreeWidgetItem *item);
+	void saveGroup();
 };
 
 Q_DECLARE_METATYPE(std::string)
