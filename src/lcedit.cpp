@@ -64,10 +64,11 @@ LCEdit::LCEdit(QWidget *parent) :
 {
 	ui->setupUi(this);
 	ui->treeWidget->setColumnCount(1);
-	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::setCommandLine);
+	//connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::setCommandLine);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &LCEdit::treeItemChanged);
 	connect(ui->treeWidget, &QTreeWidget::itemExpanded, this, &LCEdit::treeItemExpanded);
-	connect(ui->txtCmdLine, &QLineEdit::returnPressed, this, &LCEdit::startProcess);
+	//connect(ui->txtCmdLine, &QLineEdit::returnPressed, this, &LCEdit::startProcess);
+	ui->txtCmdLine->setDisabled(true);
 	connect(ui->btnStart, &QPushButton::clicked, this, &LCEdit::startProcess);
 	connect(ui->actLinks, &QAction::triggered, [this]()
 	{
