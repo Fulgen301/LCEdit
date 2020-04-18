@@ -78,6 +78,7 @@ LCEdit::LCEdit(QWidget *parent) :
 		}
 	});
 	connect(ui->actPath, &QAction::triggered, this, &LCEdit::showPathDialog);
+	connect(ui->actReload, &QAction::triggered, this, &LCEdit::reload);
 
 	loadPlugins(); // Plugins might want to set the path.
 

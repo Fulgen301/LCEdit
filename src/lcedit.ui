@@ -112,6 +112,7 @@
      <string>&amp;Datei</string>
     </property>
     <addaction name="actPath"/>
+    <addaction name="actReload"/>
    </widget>
    <widget class="QMenu" name="menuActions">
     <property name="title">
@@ -137,6 +138,14 @@
   <action name="actPath">
    <property name="text">
     <string>Pfad setzen...</string>
+   </property>
+  </action>
+  <action name="actReload">
+   <property name="text">
+    <string>Neu laden</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
    </property>
   </action>
  </widget>
