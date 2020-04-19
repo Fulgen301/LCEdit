@@ -217,10 +217,10 @@ void C4GroupPlugin::closeGroup(LCTreeWidgetItem *item, bool confirmSave)
 
 	if (confirmSave)
 	{
-		switch (QMessageBox::warning(
+		switch (QMessageBox::information(
 					nullptr,
-					tr("Schließen bestätigen"),
-					tr("Die Gruppe wurde noch nicht gespeichert.\nSpeichern?"),
+					tr("Gruppe schließen"),
+					tr("Soll die Gruppe gespeichert werden?"),
 					QMessageBox::Save | QMessageBox::Discard | QMessageBox::Abort,
 					QMessageBox::Abort))
 		{
