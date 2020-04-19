@@ -26,7 +26,6 @@ set(CMAKE_CXX_STANDARD 17)
 # Find the QtWidgets library
 find_package(Qt5Core CONFIG REQUIRED)
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(OpenSSL REQUIRED)
 find_package(KF5TextEditor)
 
 if (UNIX)
