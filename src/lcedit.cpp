@@ -23,8 +23,11 @@
 #include <QRegularExpression>
 #include <QPluginLoader>
 #include <QStaticPlugin>
+#include <QTextCodec>
 #include <QTimer>
+
 #include <algorithm>
+
 #include "lcedit.h"
 // #include "ui_lcedit.h"
 
@@ -231,7 +234,9 @@ void LCEdit::treeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous
 			&& device->open(QIODevice::ReadOnly)
 			&& QMimeDatabase().mimeTypeForFileNameAndData(root->text(0), device->peek(20)).inherits("text/plain"))
 	{
-		ui->txtDescription->setPlainText(device->readAll());
+		QByteArray data = device->readAll();
+		QTextCodec *codec = QTextCodec::codecForUtfText(data, QTextCodec::codecForName("CP-1252"));
+		ui->txtDescription->setPlainText(codec->toUnicode(data));
 		device->close();
 	}
 	else
