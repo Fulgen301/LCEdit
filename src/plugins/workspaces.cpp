@@ -16,6 +16,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMenu>
+#include <QMessageBox>
 #include <QSettings>
 #include "workspaces.h"
 
@@ -35,7 +36,10 @@ void WorkspacePlugin::init(LCEdit *editor)
 	settings.beginGroup("Workspaces");
 	auto *menu = new QMenu(m_editor->tr("Arbeitsverzeichnisse"));
 
-	for (const QString &key : settings.childKeys())
+	QStringList keys = settings.childKeys();
+	keys.removeDuplicates();
+
+	for (const QString &key : keys)
 	{
 		menu->addAction(key, [key = settings.value(key).toString(), this]()
 		{
@@ -56,6 +60,8 @@ void WorkspacePlugin::init(LCEdit *editor)
 		{
 			return;
 		}
+
+	getTitle:
 		QString title = QInputDialog::getText(
 					nullptr,
 					m_editor->tr("Arbeitsverzeichnis hinzufügen"),
@@ -65,6 +71,17 @@ void WorkspacePlugin::init(LCEdit *editor)
 		if (title.isEmpty())
 		{
 			return;
+		}
+
+		else if (m_editor->settings.contains(QStringLiteral("Workspaces/%1").arg(title)))
+		{
+			QMessageBox::critical(
+						nullptr,
+						tr("Titel nicht eindeutig"),
+						tr("Ein Arbeitsverzeichnis mit diesem Namen existiert bereits.")
+						);
+
+			goto getTitle;
 		}
 
 		m_editor->settings.setValue(QStringLiteral("Workspaces/%1").arg(title), path);
