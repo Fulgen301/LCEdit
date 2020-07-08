@@ -27,15 +27,19 @@ jobs:
         cd build
         source /opt/qt514/bin/qt514-env.sh && cmake -DCMAKE_INSTALL_PREFIX="/usr" -DCMAKE_BUILD_TYPE="Debug" -DLCEDIT_PLUGIN_DEPLOY_PATH='/usr/plugins' ..
     - name: make
-      run: make
+      run: |
+        cd build
+        make
     - name: Install
       run: |
+        cd build
         mkdir appdir
         DESTDIR=appdir make install
         wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
         unset QTDIR; unset QT_PLUGIN_PATH; unset LD_LIBRARY_PATH
         chmod a+x ./linuxdeployqt-continuous-x86_64.AppImage
         ./linuxdeployqt-continuous-x86_64.AppImage appdir/usr/share/applications/lcedit.desktop -appimage -bundle-non-qt-libs -no-strip -qmake=/opt/qt512/bin/qmake
+        mv LCEdit-*-x86_64.AppImage ..
     - name: Upload
       uses: actions/upload-artifact@v1
       with:
