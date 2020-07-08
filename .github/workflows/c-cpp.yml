@@ -16,7 +16,7 @@ jobs:
     - name: submodules
       run: git submodule update --init --recursive
     - name: Qt 5.12.2
-      run: sudo add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial
+      run: sudo add-apt-repository ppa:beineri/opt-qt-5.12.9-xenial
     - name: Dependencies
       run: |
         sudo apt-get update
